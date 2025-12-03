@@ -1,0 +1,53 @@
+body {
+    background-image: url('/img/stardust_2X.png');/*lien modifié*/
+    background-repeat: repeat; /*Ajouté*/
+    font-family: 'Open Sans';
+}
+.banner1 {
+    background-position: center;
+    display:block;
+    margin-left: auto;
+    margin-right: auto;
+    padding-bottom: 20px;
+}
+.imgbanner {
+    horiz-align: middle;
+    max-width: 50%;
+}
+.navbar-left .mini-user-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 35px;
+    float:left;
+    position: relative;
+    top: 7px;
+    left:10px;
+}
+.navbar-left a {
+    font-size: 14px;
+    top:14px;
+    left:20px;
+}
+.test {
+    list-style:none;
+    margin:0;
+    padding:0;
+    text-align:center;
+}
+.test li {
+    display: inline;
+}
+.test a {
+    display: inline-block;
+    padding: 10px;
+}
+.navbar-center ul {
+display: inline-block;
+list-style-type: disc;
+-webkit-margin-before: 0;
+-webkit-margin-after: 0;
+-webkit-margin-start: 28%;
+-webkit-margin-end: 0;
+-webkit-padding-start: 0;
+
+}
