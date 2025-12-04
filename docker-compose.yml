@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: nawel-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_change_me
+      MYSQL_DATABASE: nawel
+      MYSQL_USER: nawel_user
+      MYSQL_PASSWORD: nawel_password_change_me
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - nawel-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (ASP.NET Core)
+  backend:
+    build:
+      context: ./backend/Nawel.Api
+      dockerfile: Dockerfile
+    container_name: nawel-backend
+    restart: always
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Server=mysql;Port=3306;Database=nawel;User=nawel_user;Password=nawel_password_change_me;
+      - Jwt__Secret=your_super_secret_jwt_key_change_me_minimum_32_characters
+      - Jwt__Issuer=NawelApi
+      - Jwt__Audience=NawelApp
+      - Jwt__ExpirationMinutes=60
+      - Smtp__Host=smtp.example.com
+      - Smtp__Port=587
+      - Smtp__Username=
+      - Smtp__Password=
+      - Smtp__FromEmail=no-reply@nawel.com
+      - Smtp__FromName=Nawel App
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - nawel-network
+
+  # Frontend (React + Vite)
+  frontend:
+    build:
+      context: ./frontend/nawel-app
+      dockerfile: Dockerfile
+    container_name: nawel-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    depends_on:
+      - backend
+    networks:
+      - nawel-network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  nawel-network:
+    driver: bridge

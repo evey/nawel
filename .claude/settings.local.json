@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(dotnet --version:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet add package:*)",
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(dotnet run)",
+      "Bash(dotnet remove:*)",
+      "Bash(dotnet build:*)",
+      "Bash(curl:*)",
+      "Bash(echo:*)",
+      "Bash(sqlite3:*)",
+      "Bash(where:*)",
+      "Bash(taskkill:*)",
+      "Bash(timeout:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwidW5pcXVlX25hbWUiOiJzeWx2YWluIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIyIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6InN5bHZhaW4iLCJGaXJzdE5hbWUiOiJTeWx2YWluIiwiTGFzdE5hbWUiOiJOaXJvbmkiLCJBdmF0YXIiOiJhdmF0YXIucG5nIiwianRpIjoiYmMzZDc3ZTYtYTJkYy00NzQxLWEyZDYtYjJmNmRkZTJkNzEyIiwiZXhwIjoxNzY0ODY5MTM3LCJpc3MiOiJOYXdlbEFwaSIsImF1ZCI6Ik5hd2VsQXBwIn0.mmYANMFSdC9KPbOOAV1AjsB9m9kzGDKam0fV3Sj0lJ0\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

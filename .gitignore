@@ -1,0 +1,55 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backend (.NET)
+backend/**/bin/
+backend/**/obj/
+backend/**/*.user
+backend/**/*.suo
+backend/**/.vs/
+backend/**/appsettings.Development.json
+backend/**/appsettings.Local.json
+
+# Frontend (Node.js)
+frontend/**/node_modules/
+frontend/**/dist/
+frontend/**/.env.local
+frontend/**/.env.development.local
+frontend/**/.env.test.local
+frontend/**/.env.production.local
+frontend/**/npm-debug.log*
+frontend/**/yarn-debug.log*
+frontend/**/yarn-error.log*
+
+# Uploads (keep structure, ignore content)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Docker
+docker-compose.override.yml
+
+# Database
+*.sql.bak
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+
+# Secrets
+*.key
+*.pem
+secrets.txt
+.env
+
+# Windows special files
+nul
