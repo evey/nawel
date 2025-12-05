@@ -15,6 +15,7 @@ public class UserListDto
     public string UserName { get; set; } = string.Empty;
     public string AvatarUrl { get; set; } = string.Empty;
     public int GiftCount { get; set; }
+    public bool IsChildren { get; set; }
 }
 
 public class FamilyListsDto

@@ -14,6 +14,7 @@ public class NawelDbContext : DbContext
     public DbSet<GiftList> Lists { get; set; }
     public DbSet<Gift> Gifts { get; set; }
     public DbSet<GiftParticipation> GiftParticipations { get; set; }
+    public DbSet<OpenGraphRequest> OpenGraphRequests { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -79,6 +80,18 @@ public class NawelDbContext : DbContext
             entity.HasOne(gp => gp.User)
                 .WithMany(u => u.GiftParticipations)
                 .HasForeignKey(gp => gp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // OpenGraphRequest configuration
+        modelBuilder.Entity<OpenGraphRequest>(entity =>
+        {
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.HasOne(o => o.User)
+                .WithMany()
+                .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

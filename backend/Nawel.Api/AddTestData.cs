@@ -199,4 +199,83 @@ public class AddTestData
         Console.WriteLine($"  - {giftFree2.Name} (libre)");
         Console.WriteLine($"  - {giftReserved.Name} (réservé par {sylvain.FirstName ?? sylvain.Login})");
     }
+
+    public static async Task AddMarieGroupGift(NawelDbContext context)
+    {
+        // Trouver Marie
+        var marie = await context.Users.FirstOrDefaultAsync(u => u.Login == "marie");
+        if (marie == null)
+        {
+            Console.WriteLine("Utilisateur Marie non trouvé");
+            return;
+        }
+
+        // Trouver Claire et Sylvain pour les participations
+        var claire = await context.Users.FirstOrDefaultAsync(u => u.Login == "claire");
+        var sylvain = await context.Users.FirstOrDefaultAsync(u => u.Login == "sylvain");
+
+        if (claire == null || sylvain == null)
+        {
+            Console.WriteLine("Utilisateurs Claire ou Sylvain non trouvés");
+            return;
+        }
+
+        // Trouver la liste de Marie
+        var marieList = await context.Lists
+            .Include(l => l.Gifts)
+            .FirstOrDefaultAsync(l => l.UserId == marie.Id);
+
+        if (marieList == null)
+        {
+            Console.WriteLine("Liste de Marie non trouvée");
+            return;
+        }
+
+        // Trouver le cadeau "Parfum" dans la liste de Marie pour 2025
+        var parfumGift = marieList.Gifts.FirstOrDefault(g => g.Name == "Parfum" && g.Year == 2025);
+
+        if (parfumGift == null)
+        {
+            Console.WriteLine("Cadeau 'Parfum' non trouvé dans la liste de Marie pour 2025");
+            return;
+        }
+
+        // Vérifier s'il y a déjà des participations
+        var existingParticipations = await context.GiftParticipations
+            .Where(p => p.GiftId == parfumGift.Id)
+            .CountAsync();
+
+        if (existingParticipations > 0)
+        {
+            Console.WriteLine($"Le cadeau 'Parfum' a déjà {existingParticipations} participation(s)");
+            return;
+        }
+
+        // Marquer le cadeau comme cadeau groupé et non disponible
+        parfumGift.IsGroupGift = true;
+        parfumGift.Available = false;
+        parfumGift.UpdatedAt = DateTime.UtcNow;
+
+        // Ajouter les participations de Claire et Sylvain
+        var participationClaire = new GiftParticipation
+        {
+            GiftId = parfumGift.Id,
+            UserId = claire.Id,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var participationSylvain = new GiftParticipation
+        {
+            GiftId = parfumGift.Id,
+            UserId = sylvain.Id,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        context.GiftParticipations.Add(participationClaire);
+        context.GiftParticipations.Add(participationSylvain);
+        await context.SaveChangesAsync();
+
+        Console.WriteLine($"Cadeau groupé créé pour Marie :");
+        Console.WriteLine($"  - {parfumGift.Name} - réservé par {claire.FirstName} et {sylvain.FirstName} (cadeau groupé)");
+    }
 }

@@ -24,18 +24,24 @@ import {
   FormControl,
   InputLabel,
   Chip,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Download as DownloadIcon,
+  Group as GroupIcon,
+  AutoAwesome as AutoAwesomeIcon,
 } from '@mui/icons-material';
 import NavigationBar from '../components/NavigationBar';
-import { giftsAPI } from '../services/api';
+import ManagingChildBanner from '../components/ManagingChildBanner';
+import { useAuth } from '../contexts/AuthContext';
+import { giftsAPI, productsAPI } from '../services/api';
 
 const MyList = () => {
   const navigate = useNavigate();
+  const { user, managingChild } = useAuth();
   const [gifts, setGifts] = useState([]);
   const [availableYears, setAvailableYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -52,6 +58,8 @@ const MyList = () => {
     imageUrl: '',
     price: '',
   });
+  const [extractingInfo, setExtractingInfo] = useState(false);
+  const [extractError, setExtractError] = useState('');
 
   useEffect(() => {
     fetchYears();
@@ -59,7 +67,7 @@ const MyList = () => {
 
   useEffect(() => {
     fetchGifts();
-  }, [selectedYear]);
+  }, [selectedYear, managingChild]);
 
   const fetchYears = async () => {
     try {
@@ -80,7 +88,9 @@ const MyList = () => {
   const fetchGifts = async () => {
     try {
       setLoading(true);
-      const response = await giftsAPI.getMyGifts(selectedYear);
+      const response = managingChild
+        ? await giftsAPI.getChildGifts(managingChild.userId, selectedYear)
+        : await giftsAPI.getMyGifts(selectedYear);
       setGifts(response.data);
       setError('');
     } catch (err) {
@@ -121,6 +131,7 @@ const MyList = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setEditingGift(null);
+    setExtractError('');
   };
 
   const handleInputChange = (e) => {
@@ -129,6 +140,38 @@ const MyList = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handleExtractInfo = async () => {
+    if (!formData.url || !formData.url.trim()) {
+      setExtractError('Veuillez entrer une URL valide');
+      return;
+    }
+
+    try {
+      setExtractingInfo(true);
+      setExtractError('');
+
+      const response = await productsAPI.extractInfo(formData.url);
+      const productInfo = response.data;
+
+      // Remplir automatiquement les champs s'ils sont vides
+      setFormData((prev) => ({
+        ...prev,
+        name: prev.name || productInfo.name || prev.name,
+        description: prev.description || productInfo.description || prev.description,
+        imageUrl: prev.imageUrl || productInfo.imageUrl || prev.imageUrl,
+        price: prev.price || (productInfo.price ? productInfo.price.toString() : '') || prev.price,
+      }));
+
+      setSuccessMessage('Informations extraites avec succès !');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error extracting product info:', err);
+      setExtractError(err.response?.data?.message || 'Impossible d\'extraire les informations. Vous pouvez les remplir manuellement.');
+    } finally {
+      setExtractingInfo(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -146,7 +189,12 @@ const MyList = () => {
         await giftsAPI.updateGift(editingGift.id, giftData);
         setSuccessMessage('Cadeau modifié avec succès');
       } else {
-        await giftsAPI.createGift(giftData);
+        // Use different endpoint based on management mode
+        if (managingChild) {
+          await giftsAPI.createGiftForChild(managingChild.userId, giftData);
+        } else {
+          await giftsAPI.createGift(giftData);
+        }
         setSuccessMessage('Cadeau ajouté avec succès');
       }
 
@@ -199,6 +247,12 @@ const MyList = () => {
     }
   };
 
+  const isParticipating = (gift) => {
+    if (!gift.isGroupGift || !gift.participantNames) return false;
+    const userDisplayName = user?.firstName || user?.login;
+    return gift.participantNames.includes(userDisplayName);
+  };
+
   const isPastYear = selectedYear < new Date().getFullYear();
   const pastYearsForImport = availableYears.filter(y => y < new Date().getFullYear());
 
@@ -212,13 +266,15 @@ const MyList = () => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <NavigationBar title="Ma liste de cadeaux" />
+      <NavigationBar title={managingChild ? `Liste de ${managingChild.userName}` : "Ma liste de cadeaux"} />
 
-      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h4">
-              Mes cadeaux
+      <Container maxWidth="md" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, px: { xs: 2, sm: 3 } }}>
+        <ManagingChildBanner />
+
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mb: 3, gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
+              {managingChild ? `Cadeaux de ${managingChild.userName}` : 'Mes cadeaux'}
             </Typography>
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>Année</InputLabel>
@@ -238,12 +294,14 @@ const MyList = () => {
               <Chip label="Lecture seule" color="info" size="small" />
             )}
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
             {!isPastYear && pastYearsForImport.length > 0 && (
               <Button
                 variant="outlined"
                 startIcon={<DownloadIcon />}
                 onClick={handleOpenImportDialog}
+                fullWidth
+                sx={{ minWidth: { xs: 'auto', sm: '120px' } }}
               >
                 Importer
               </Button>
@@ -253,6 +311,8 @@ const MyList = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 onClick={() => handleOpenDialog()}
+                fullWidth
+                sx={{ minWidth: { xs: 'auto', sm: '120px' } }}
               >
                 Ajouter
               </Button>
@@ -303,7 +363,12 @@ const MyList = () => {
                 <ListItem
                   key={gift.id}
                   divider={index < gifts.length - 1}
-                  sx={{ py: 2, alignItems: 'flex-start' }}
+                  sx={{
+                    py: 2,
+                    alignItems: 'flex-start',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: { xs: 2, sm: 0 }
+                  }}
                 >
                   {gift.imageUrl && (
                     <Box
@@ -311,14 +376,14 @@ const MyList = () => {
                       src={gift.imageUrl}
                       alt={gift.name}
                       sx={{
-                        width: 120,
-                        minHeight: 100,
-                        maxHeight: 200,
+                        width: { xs: '100%', sm: 120 },
+                        minHeight: { xs: 150, sm: 100 },
+                        maxHeight: { xs: 250, sm: 200 },
                         objectFit: 'cover',
                         borderRadius: 1,
-                        mr: 2,
+                        mr: { xs: 0, sm: 2 },
                         flexShrink: 0,
-                        alignSelf: 'stretch',
+                        alignSelf: { xs: 'center', sm: 'stretch' },
                       }}
                       onError={(e) => {
                         e.target.style.display = 'none';
@@ -326,37 +391,11 @@ const MyList = () => {
                     />
                   )}
                   <ListItemText
+                    sx={{ width: '100%' }}
                     primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="h6">{gift.name}</Typography>
-                        {gift.isGroupGift && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              bgcolor: 'primary.main',
-                              color: 'white',
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: 1,
-                            }}
-                          >
-                            Cadeau groupé
-                          </Typography>
-                        )}
-                        {gift.isTaken && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              bgcolor: 'success.main',
-                              color: 'white',
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: 1,
-                            }}
-                          >
-                            Réservé
-                          </Typography>
-                        )}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                        <Typography variant="h6" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>{gift.name}</Typography>
+                        {/* Sur sa propre liste, on ne montre RIEN sur les réservations pour garder la surprise */}
                       </Box>
                     }
                     secondary={
@@ -382,22 +421,31 @@ const MyList = () => {
                     }
                   />
                   {!isPastYear && (
-                    <ListItemSecondaryAction>
+                    <Box sx={{
+                      display: 'flex',
+                      gap: 1,
+                      mt: { xs: 0, sm: 0 },
+                      ml: { xs: 0, sm: 'auto' },
+                      pl: { xs: 0, sm: 2 },
+                      width: { xs: '100%', sm: 'auto' },
+                      justifyContent: { xs: 'flex-end', sm: 'flex-start' }
+                    }}>
                       <IconButton
-                        edge="end"
                         onClick={() => handleOpenDialog(gift)}
-                        sx={{ mr: 1 }}
+                        size="medium"
+                        sx={{ flexShrink: 0 }}
                       >
                         <EditIcon />
                       </IconButton>
                       <IconButton
-                        edge="end"
                         onClick={() => handleDelete(gift.id)}
                         color="error"
+                        size="medium"
+                        sx={{ flexShrink: 0 }}
                       >
                         <DeleteIcon />
                       </IconButton>
-                    </ListItemSecondaryAction>
+                    </Box>
                   )}
                 </ListItem>
               ))}
@@ -407,11 +455,17 @@ const MyList = () => {
       </Container>
 
       {/* Add/Edit Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={window.innerWidth < 600}
+      >
         <DialogTitle>
           {editingGift ? 'Modifier le cadeau' : 'Ajouter un cadeau'}
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ pt: { xs: 3, sm: 2 } }}>
           <TextField
             autoFocus
             margin="dense"
@@ -434,15 +488,32 @@ const MyList = () => {
             value={formData.description}
             onChange={handleInputChange}
           />
-          <TextField
-            margin="dense"
-            name="url"
-            label="Lien (URL)"
-            type="url"
-            fullWidth
-            value={formData.url}
-            onChange={handleInputChange}
-          />
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+            <TextField
+              margin="dense"
+              name="url"
+              label="Lien (URL)"
+              type="url"
+              fullWidth
+              value={formData.url}
+              onChange={handleInputChange}
+              helperText="Collez un lien puis cliquez sur 'Extraire' pour remplir automatiquement les champs"
+            />
+            <Button
+              variant="contained"
+              onClick={handleExtractInfo}
+              disabled={extractingInfo || !formData.url.trim()}
+              startIcon={extractingInfo ? <CircularProgress size={20} /> : <AutoAwesomeIcon />}
+              sx={{ mb: '4px', minWidth: '120px' }}
+            >
+              {extractingInfo ? 'Extraction...' : 'Extraire'}
+            </Button>
+          </Box>
+          {extractError && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              {extractError}
+            </Alert>
+          )}
           <TextField
             margin="dense"
             name="imageUrl"
@@ -477,9 +548,15 @@ const MyList = () => {
       </Dialog>
 
       {/* Import Dialog */}
-      <Dialog open={openImportDialog} onClose={handleCloseImportDialog}>
+      <Dialog
+        open={openImportDialog}
+        onClose={handleCloseImportDialog}
+        fullWidth
+        maxWidth="sm"
+        fullScreen={window.innerWidth < 600}
+      >
         <DialogTitle>Importer des cadeaux d'une année précédente</DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ pt: { xs: 3, sm: 2 } }}>
           <Typography variant="body2" sx={{ mb: 2 }}>
             Sélectionnez une année pour importer les cadeaux non achetés:
           </Typography>

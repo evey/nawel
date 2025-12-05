@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.FileProviders;
 using System.Text;
 using Nawel.Api.Data;
 using Nawel.Api.Services.Auth;
+using Nawel.Api.Services.Email;
+using Nawel.Api.Services.ProductInfo;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,9 +17,24 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 
+// Configure form options for file uploads
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10 MB
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
+
 // Register services
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSingleton<INotificationDebouncer, NotificationDebouncer>();
+builder.Services.AddSingleton<IReservationNotificationDebouncer, ReservationNotificationDebouncer>();
+builder.Services.AddScoped<IProductInfoExtractor, ProductInfoExtractor>();
+
+// Register HttpClient for ProductInfoExtractor
+builder.Services.AddHttpClient();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -93,6 +111,18 @@ if (useSqlite && app.Environment.IsDevelopment())
 // Configure the HTTP request pipeline.
 
 app.UseCors("AllowFrontend");
+
+// Serve static files from wwwroot (default)
+app.UseStaticFiles();
+
+// Serve uploads directory
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
+Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

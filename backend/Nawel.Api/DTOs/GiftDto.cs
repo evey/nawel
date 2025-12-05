@@ -12,8 +12,10 @@ public class GiftDto
     public bool IsTaken { get; set; }
     public int? TakenByUserId { get; set; }
     public string? TakenByUserName { get; set; }
+    public string? Comment { get; set; }
     public bool IsGroupGift { get; set; }
     public int ParticipantCount { get; set; }
+    public List<string>? ParticipantNames { get; set; }
 }
 
 public class CreateGiftDto
@@ -34,4 +36,9 @@ public class UpdateGiftDto
     public string? ImageUrl { get; set; }
     public decimal? Price { get; set; }
     public bool? IsGroupGift { get; set; }
+}
+
+public class ReserveGiftDto
+{
+    public string? Comment { get; set; }
 }

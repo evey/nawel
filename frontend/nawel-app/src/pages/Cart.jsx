@@ -15,6 +15,7 @@ import {
   Chip,
   Divider,
   IconButton,
+  Tooltip,
 } from '@mui/material';
 import {
   Group as GroupIcon,
@@ -95,6 +96,12 @@ const Cart = () => {
     }
   };
 
+  const isParticipating = (gift) => {
+    if (!gift.isGroupGift || !gift.participantNames) return false;
+    const userDisplayName = user?.firstName || user?.login;
+    return gift.participantNames.includes(userDisplayName);
+  };
+
   const calculateTotal = () => {
     return reservedGifts
       .filter(gift => gift.price)
@@ -121,9 +128,9 @@ const Cart = () => {
     <Box sx={{ flexGrow: 1 }}>
       <NavigationBar title="Mon panier" />
 
-      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4">
+      <Container maxWidth="md" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
             Mes réservations
           </Typography>
           <Chip
@@ -162,19 +169,32 @@ const Cart = () => {
                   <ListItem
                     key={gift.id}
                     divider={index < reservedGifts.length - 1}
-                    sx={{ py: 2 }}
+                    sx={{
+                      py: 2,
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      alignItems: { xs: 'stretch', sm: 'flex-start' },
+                      gap: { xs: 2, sm: 0 }
+                    }}
                   >
                     <ListItemText
+                      sx={{ width: '100%' }}
                       primary={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Typography variant="h6">{gift.name}</Typography>
+                          <Typography variant="h6" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>{gift.name}</Typography>
                           {gift.isGroupGift && (
-                            <Chip
-                              icon={<GroupIcon />}
-                              label={`Cadeau groupé (${gift.participantCount} participant${gift.participantCount !== 1 ? 's' : ''})`}
-                              color="primary"
-                              size="small"
-                            />
+                            <Tooltip
+                              title={gift.participantNames && gift.participantNames.length > 0
+                                ? `Participants : ${gift.participantNames.join(', ')}`
+                                : 'Cadeau groupé'}
+                              arrow
+                            >
+                              <Chip
+                                icon={<GroupIcon />}
+                                label={`Cadeau groupé (${gift.participantCount} participant${gift.participantCount !== 1 ? 's' : ''})`}
+                                color={isParticipating(gift) ? 'success' : 'warning'}
+                                size="small"
+                              />
+                            </Tooltip>
                           )}
                         </Box>
                       }
@@ -205,26 +225,33 @@ const Cart = () => {
                         </Box>
                       }
                     />
-                    <IconButton
-                      edge="end"
-                      onClick={() => handleUnreserve(gift.id)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+                    <Box sx={{
+                      display: 'flex',
+                      justifyContent: { xs: 'flex-end', sm: 'flex-start' },
+                      ml: { xs: 0, sm: 2 },
+                      width: { xs: '100%', sm: 'auto' }
+                    }}>
+                      <IconButton
+                        onClick={() => handleUnreserve(gift.id)}
+                        color="error"
+                        size="medium"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
                   </ListItem>
                 ))}
               </List>
             </Card>
 
             {total > 0 && (
-              <Card sx={{ mt: 3, bgcolor: 'primary.main', color: 'white' }}>
+              <Card sx={{ mt: 3, bgcolor: 'secondary.main', color: 'white' }}>
                 <CardContent>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h5">
+                    <Typography variant="h5" sx={{ color: 'white' }}>
                       Total estimé:
                     </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
                       {total.toFixed(2)} €
                     </Typography>
                   </Box>

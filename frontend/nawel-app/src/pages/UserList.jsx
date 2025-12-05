@@ -21,6 +21,8 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  Tooltip,
+  TextField,
 } from '@mui/material';
 import {
   ShoppingCart as ShoppingCartIcon,
@@ -28,6 +30,7 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import NavigationBar from '../components/NavigationBar';
+import Avatar from '../components/Avatar';
 import { useAuth } from '../contexts/AuthContext';
 import { giftsAPI, usersAPI } from '../services/api';
 
@@ -43,6 +46,7 @@ const UserList = () => {
   const [error, setError] = useState('');
   const [selectedGift, setSelectedGift] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
+  const [reserveComment, setReserveComment] = useState('');
 
   useEffect(() => {
     // For now, get years from gifts API
@@ -59,6 +63,16 @@ const UserList = () => {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
+
+      // Fetch user info
+      const userResponse = await usersAPI.getById(parseInt(userId));
+      setListOwner({
+        name: userResponse.data.firstName || userResponse.data.login,
+        avatar: userResponse.data.avatar,
+        firstName: userResponse.data.firstName,
+        login: userResponse.data.login
+      });
+
       // Fetch current year first
       const currentYear = new Date().getFullYear();
       setSelectedYear(currentYear);
@@ -96,15 +110,18 @@ const UserList = () => {
     try {
       setLoading(true);
 
+      // Fetch user info
+      const userResponse = await usersAPI.getById(parseInt(userId));
+      setListOwner({
+        name: userResponse.data.firstName || userResponse.data.login,
+        avatar: userResponse.data.avatar,
+        firstName: userResponse.data.firstName,
+        login: userResponse.data.login
+      });
+
       // Fetch gifts
       const giftsResponse = await giftsAPI.getUserGifts(parseInt(userId), selectedYear);
       setGifts(giftsResponse.data);
-
-      // Get user info from the first gift or fetch separately if needed
-      if (giftsResponse.data.length > 0) {
-        // We'll need to add an endpoint to get user info, for now use placeholder
-        setListOwner({ name: 'Utilisateur' });
-      }
 
       setError('');
     } catch (err) {
@@ -121,19 +138,21 @@ const UserList = () => {
 
   const handleOpenReserveDialog = (gift) => {
     setSelectedGift(gift);
+    setReserveComment(gift.comment || '');
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedGift(null);
+    setReserveComment('');
   };
 
   const handleReserve = async () => {
     if (!selectedGift) return;
 
     try {
-      await giftsAPI.reserveGift(selectedGift.id);
+      await giftsAPI.reserveGift(selectedGift.id, { comment: reserveComment });
       await fetchUserAndGifts();
       handleCloseDialog();
       setError('');
@@ -165,6 +184,12 @@ const UserList = () => {
     return gift.isTaken && gift.takenByUserId === user?.id;
   };
 
+  const isParticipating = (gift) => {
+    if (!gift.isGroupGift || !gift.participantNames) return false;
+    const userDisplayName = user?.firstName || user?.login;
+    return gift.participantNames.includes(userDisplayName);
+  };
+
   const isPastYear = selectedYear < new Date().getFullYear();
 
   if (loading && availableYears.length === 0) {
@@ -177,12 +202,23 @@ const UserList = () => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <NavigationBar title="Liste de cadeaux" />
+      <NavigationBar title={`Liste de ${listOwner?.name || 'cadeaux'}`} />
 
-      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="h4">
+      <Container maxWidth="md" sx={{ mt: { xs: 2, sm: 4 }, mb: 4, px: { xs: 2, sm: 3 } }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, mb: 3, gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+            {listOwner && (
+              <Avatar
+                user={listOwner}
+                size={60}
+                sx={{
+                  width: { xs: 50, sm: 60 },
+                  height: { xs: 50, sm: 60 },
+                  fontSize: { xs: 20, sm: 24 }
+                }}
+              />
+            )}
+            <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
               Cadeaux de {listOwner?.name || 'l\'utilisateur'}
             </Typography>
             {availableYears.length > 1 && (
@@ -230,31 +266,45 @@ const UserList = () => {
             <List>
               {gifts.map((gift, index) => {
                 const reservedByMe = isReservedByMe(gift);
-                const canReserve = !isPastYear && (!gift.isTaken || gift.isGroupGift);
+                const participatingInGroup = gift.isGroupGift && isParticipating(gift);
+                const reservedBySomeoneElse = gift.isTaken && !reservedByMe && !gift.isGroupGift;
+                const canReserve = !isPastYear && (!gift.isTaken || (gift.isGroupGift && !participatingInGroup));
 
                 return (
                   <ListItem
                     key={gift.id}
                     divider={index < gifts.length - 1}
-                    sx={{ py: 2 }}
+                    sx={{
+                      py: 2,
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      alignItems: { xs: 'stretch', sm: 'flex-start' },
+                      gap: { xs: 2, sm: 0 }
+                    }}
                   >
                     <ListItemText
                       primary={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                          <Typography variant="h6">{gift.name}</Typography>
+                          <Typography variant="h6" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>{gift.name}</Typography>
                           {gift.isGroupGift && (
-                            <Chip
-                              icon={<GroupIcon />}
-                              label={`Cadeau groupé (${gift.participantCount} participant${gift.participantCount !== 1 ? 's' : ''})`}
-                              color="primary"
-                              size="small"
-                            />
+                            <Tooltip
+                              title={gift.participantNames && gift.participantNames.length > 0
+                                ? `Participants : ${gift.participantNames.join(', ')}`
+                                : 'Cadeau groupé'}
+                              arrow
+                            >
+                              <Chip
+                                icon={<GroupIcon />}
+                                label={`Cadeau groupé (${gift.participantCount} participant${gift.participantCount !== 1 ? 's' : ''})`}
+                                color={isParticipating(gift) ? 'success' : 'warning'}
+                                size="small"
+                              />
+                            </Tooltip>
                           )}
                           {gift.isTaken && !gift.isGroupGift && (
                             <Chip
                               icon={<CheckCircleIcon />}
-                              label={reservedByMe ? 'Réservé par vous' : 'Déjà réservé'}
-                              color={reservedByMe ? 'success' : 'default'}
+                              label={reservedByMe ? 'Réservé par vous' : `Réservé par ${gift.takenByUserName || 'quelqu\'un'}`}
+                              color={reservedByMe ? 'success' : 'warning'}
                               size="small"
                             />
                           )}
@@ -275,33 +325,63 @@ const UserList = () => {
                             </Typography>
                           )}
                           {gift.price && (
-                            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                               Prix: {gift.price.toFixed(2)} €
                             </Typography>
+                          )}
+                          {gift.comment && gift.isTaken && (
+                            <Alert severity="info" sx={{ mt: 1 }}>
+                              <strong>Commentaire :</strong>
+                              <Box component="span" sx={{ whiteSpace: 'pre-wrap', display: 'block', mt: 0.5 }}>
+                                {gift.comment}
+                              </Box>
+                            </Alert>
                           )}
                         </Box>
                       }
                     />
                     {!isPastYear && (
-                      <Box sx={{ ml: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        {reservedByMe ? (
+                      <Box sx={{
+                        ml: { xs: 0, sm: 2 },
+                        display: 'flex',
+                        flexDirection: { xs: 'row', sm: 'column' },
+                        gap: 1,
+                        width: { xs: '100%', sm: 'auto' }
+                      }}>
+                        {reservedByMe || participatingInGroup ? (
                           <Button
                             variant="outlined"
                             color="error"
                             onClick={() => handleUnreserve(gift.id)}
                             size="small"
+                            fullWidth
+                            sx={{ minWidth: { xs: 'auto', sm: '100px' } }}
                           >
                             Annuler
                           </Button>
                         ) : canReserve ? (
                           <Button
                             variant="contained"
-                            color="primary"
+                            color={gift.isGroupGift ? 'secondary' : 'primary'}
                             onClick={() => handleOpenReserveDialog(gift)}
                             size="small"
-                            startIcon={<ShoppingCartIcon />}
+                            fullWidth
+                            startIcon={gift.isGroupGift ? <GroupIcon /> : <ShoppingCartIcon />}
+                            sx={{ minWidth: { xs: 'auto', sm: '100px' } }}
                           >
-                            Réserver
+                            {gift.isGroupGift ? 'Participer' : 'Réserver'}
+                          </Button>
+                        ) : reservedBySomeoneElse ? (
+                          <Button
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => handleOpenReserveDialog(gift)}
+                            size="small"
+                            fullWidth
+                            startIcon={<GroupIcon />}
+                            sx={{ minWidth: { xs: 'auto', sm: '100px' } }}
+                          >
+                            Participer
                           </Button>
                         ) : (
                           <Chip label="Non disponible" size="small" />
@@ -317,17 +397,45 @@ const UserList = () => {
       </Container>
 
       {/* Reserve Confirmation Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
-        <DialogTitle>Confirmer la réservation</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Voulez-vous réserver le cadeau "{selectedGift?.name}" ?
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+        fullScreen={window.innerWidth < 600}
+      >
+        <DialogTitle>
+          {selectedGift?.isGroupGift || (selectedGift?.isTaken && !isReservedByMe(selectedGift))
+            ? 'Participer au cadeau'
+            : 'Confirmer la réservation'}
+        </DialogTitle>
+        <DialogContent sx={{ pt: { xs: 3, sm: 2 } }}>
+          <Typography sx={{ mb: 2 }}>
+            {selectedGift?.isGroupGift || (selectedGift?.isTaken && !isReservedByMe(selectedGift))
+              ? `Voulez-vous participer au cadeau "${selectedGift?.name}" ?`
+              : `Voulez-vous réserver le cadeau "${selectedGift?.name}" ?`}
           </Typography>
           {selectedGift?.isGroupGift && (
-            <Alert severity="info" sx={{ mt: 2 }}>
+            <Alert severity="info" sx={{ mb: 2 }}>
               Il s'agit d'un cadeau groupé. Vous participerez à ce cadeau avec d'autres personnes.
             </Alert>
           )}
+          {selectedGift?.isTaken && !selectedGift?.isGroupGift && !isReservedByMe(selectedGift) && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Ce cadeau a déjà été réservé par <strong>{selectedGift?.takenByUserName}</strong>.
+              En participant, vous créez automatiquement un cadeau groupé.
+            </Alert>
+          )}
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Commentaire (optionnel)"
+            placeholder="Ex: J'ai pris le tome 1 et 2"
+            value={reserveComment}
+            onChange={(e) => setReserveComment(e.target.value)}
+            helperText="Ajoutez un commentaire pour informer les autres participants"
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Annuler</Button>

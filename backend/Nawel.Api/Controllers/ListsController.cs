@@ -53,7 +53,8 @@ public class ListsController : ControllerBase
                             UserId = u.Id,
                             UserName = u.FirstName ?? u.Login,
                             AvatarUrl = u.Avatar,
-                            GiftCount = u.List?.Gifts.Count(g => g.Year == currentYear) ?? 0
+                            GiftCount = u.List?.Gifts.Count(g => g.Year == currentYear) ?? 0,
+                            IsChildren = u.IsChildren
                         })
                         .ToList();
 
