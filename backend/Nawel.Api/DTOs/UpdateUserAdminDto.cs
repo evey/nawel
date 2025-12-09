@@ -14,4 +14,6 @@ public class UpdateUserAdminDto
     public int? FamilyId { get; set; }
 
     public bool? IsChildren { get; set; }
+
+    public bool? IsAdmin { get; set; }
 }

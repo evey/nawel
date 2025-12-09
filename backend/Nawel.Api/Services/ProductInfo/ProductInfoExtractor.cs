@@ -175,7 +175,7 @@ public class ProductInfoExtractor : IProductInfoExtractor
         foreach (var selector in selectors)
         {
             var node = doc.DocumentNode.SelectSingleNode(selector);
-            var value = node?.GetAttributeValue("content", null) ?? node?.InnerText;
+            var value = node?.GetAttributeValue("content", string.Empty) ?? node?.InnerText ?? string.Empty;
 
             if (!string.IsNullOrWhiteSpace(value))
             {
@@ -233,12 +233,17 @@ public class ProductInfoExtractor : IProductInfoExtractor
             if (node == null) continue;
 
             // Essayer différents attributs dans l'ordre
-            var value = node.GetAttributeValue("content", null) ??
-                       node.GetAttributeValue("data-old-hires", null) ??
-                       node.GetAttributeValue("data-src", null) ??
-                       node.GetAttributeValue("data-lazy-src", null) ??
-                       node.GetAttributeValue("data-zoom-src", null) ??
-                       node.GetAttributeValue("src", null);
+            var value = node.GetAttributeValue("content", string.Empty);
+            if (string.IsNullOrWhiteSpace(value))
+                value = node.GetAttributeValue("data-old-hires", string.Empty);
+            if (string.IsNullOrWhiteSpace(value))
+                value = node.GetAttributeValue("data-src", string.Empty);
+            if (string.IsNullOrWhiteSpace(value))
+                value = node.GetAttributeValue("data-lazy-src", string.Empty);
+            if (string.IsNullOrWhiteSpace(value))
+                value = node.GetAttributeValue("data-zoom-src", string.Empty);
+            if (string.IsNullOrWhiteSpace(value))
+                value = node.GetAttributeValue("src", string.Empty);
 
             if (!string.IsNullOrWhiteSpace(value))
             {
@@ -278,7 +283,7 @@ public class ProductInfoExtractor : IProductInfoExtractor
         foreach (var selector in selectors)
         {
             var node = doc.DocumentNode.SelectSingleNode(selector);
-            var value = node?.GetAttributeValue("content", null);
+            var value = node?.GetAttributeValue("content", string.Empty) ?? string.Empty;
 
             if (!string.IsNullOrWhiteSpace(value))
             {
@@ -306,8 +311,8 @@ public class ProductInfoExtractor : IProductInfoExtractor
         var currencyNode = doc.DocumentNode.SelectSingleNode("//meta[@property='og:price:currency']/@content") ??
                            doc.DocumentNode.SelectSingleNode("//meta[@property='product:price:currency']/@content");
 
-        var priceText = priceNode?.GetAttributeValue("content", null);
-        var currency = currencyNode?.GetAttributeValue("content", null);
+        var priceText = priceNode?.GetAttributeValue("content", string.Empty) ?? string.Empty;
+        var currency = currencyNode?.GetAttributeValue("content", string.Empty) ?? string.Empty;
 
         if (!string.IsNullOrWhiteSpace(priceText))
         {
@@ -456,8 +461,11 @@ public class ProductInfoExtractor : IProductInfoExtractor
 
     private bool IsOpenGraphEnabled()
     {
+        var apiKey = Environment.GetEnvironmentVariable("OPENGRAPH_API_KEY")
+            ?? _configuration["OpenGraph:ApiKey"];
+
         return _configuration.GetValue<bool>("OpenGraph:Enabled") &&
-               !string.IsNullOrWhiteSpace(_configuration["OpenGraph:ApiKey"]);
+               !string.IsNullOrWhiteSpace(apiKey);
     }
 
     private bool IsDataIncomplete(ProductInfoDto productInfo)
@@ -473,7 +481,9 @@ public class ProductInfoExtractor : IProductInfoExtractor
 
         try
         {
-            var apiKey = _configuration["OpenGraph:ApiKey"];
+            var apiKey = Environment.GetEnvironmentVariable("OPENGRAPH_API_KEY")
+                ?? _configuration["OpenGraph:ApiKey"];
+
             var apiUrl = $"https://opengraph.io/api/1.1/site/{Uri.EscapeDataString(url)}?app_id={apiKey}";
 
             var httpClient = _httpClientFactory.CreateClient();

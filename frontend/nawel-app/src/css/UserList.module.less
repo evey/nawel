@@ -1,0 +1,147 @@
+// Styles pour la page UserList
+.container {
+  margin-top: 16px;
+  margin-bottom: 32px;
+  padding-left: 16px;
+  padding-right: 16px;
+
+  @media (min-width: 600px) {
+    margin-top: 32px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.headerAvatar {
+  width: 50px;
+  height: 50px;
+  font-size: 20px;
+
+  @media (min-width: 600px) {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+  }
+}
+
+.title {
+  font-size: 1.5rem;
+
+  @media (min-width: 600px) {
+    font-size: 2.125rem;
+  }
+}
+
+.yearSelect {
+  min-width: 120px;
+}
+
+.alertContainer {
+  margin-bottom: 24px;
+}
+
+.emptyState {
+  text-align: center;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.giftListItem {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0;
+  }
+}
+
+.giftImage {
+  width: 100%;
+  min-height: 150px;
+  max-height: 250px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 0;
+  flex-shrink: 0;
+  align-self: center;
+
+  @media (min-width: 600px) {
+    width: 120px;
+    min-height: 100px;
+    max-height: 200px;
+    margin-right: 16px;
+    align-self: stretch;
+  }
+}
+
+.giftInfo {
+  width: 100%;
+}
+
+.giftTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 1.1rem;
+
+  @media (min-width: 600px) {
+    font-size: 1.25rem;
+  }
+}
+
+.secondaryInfo {
+  margin-top: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-left: 0;
+  width: 100%;
+
+  @media (min-width: 600px) {
+    justify-content: flex-start;
+    margin-left: 16px;
+    width: auto;
+  }
+}
+
+.actionButton {
+  flex-shrink: 0;
+}

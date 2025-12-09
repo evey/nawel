@@ -19,6 +19,7 @@ public class UserDto
     public bool NotifyGiftTaken { get; set; }
     public bool DisplayPopup { get; set; }
     public bool IsChildren { get; set; }
+    public bool IsAdmin { get; set; }
     public int FamilyId { get; set; }
     public string? FamilyName { get; set; }
 }

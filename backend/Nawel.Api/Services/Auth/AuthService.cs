@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Nawel.Api.Data;
 using Nawel.Api.Models;
+using Nawel.Api.Constants;
+using Nawel.Api.Exceptions;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -9,10 +11,12 @@ namespace Nawel.Api.Services.Auth;
 public class AuthService : IAuthService
 {
     private readonly NawelDbContext _context;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(NawelDbContext context)
+    public AuthService(NawelDbContext context, ILogger<AuthService> logger)
     {
         _context = context;
+        _logger = logger;
     }
 
     public async Task<User?> AuthenticateAsync(string login, string password)
@@ -24,26 +28,21 @@ public class AuthService : IAuthService
         if (user == null)
             return null;
 
-        // Check if password is MD5 (old format) or BCrypt (new format)
+        // Check if password is still in legacy MD5 format (32 hex chars, not BCrypt)
         if (user.Password.Length == 32 && !user.Password.StartsWith("$2"))
         {
-            // Old MD5 password
-            var md5Hash = ComputeMd5Hash(password);
-            if (user.Password == md5Hash)
-            {
-                // Valid MD5 password, migrate to BCrypt
-                user.Password = BCrypt.Net.BCrypt.HashPassword(password);
-                await _context.SaveChangesAsync();
-                return user;
-            }
+            // Legacy MD5 password detected - user must reset password
+            _logger.LogWarning(
+                "User {Login} (ID: {UserId}) attempted login with legacy MD5 password. " +
+                "Password reset required for security. Throwing LegacyPasswordException.",
+                user.Login, user.Id);
+            throw new LegacyPasswordException(user.Id, user.Login, user.Email ?? "");
         }
-        else
+
+        // Verify BCrypt password
+        if (BCrypt.Net.BCrypt.Verify(password, user.Password))
         {
-            // BCrypt password
-            if (BCrypt.Net.BCrypt.Verify(password, user.Password))
-            {
-                return user;
-            }
+            return user;
         }
 
         return null;
@@ -73,17 +72,26 @@ public class AuthService : IAuthService
         if (user == null)
             throw new InvalidOperationException("User not found");
 
-        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
-        user.ResetToken = token;
-        user.TokenExpiry = DateTime.UtcNow.AddHours(1); // Token valid for 1 hour
+        // Generate a cryptographically secure random token
+        var tokenBytes = RandomNumberGenerator.GetBytes(ApplicationConstants.Authentication.ResetTokenLengthBytes);
+        var token = Convert.ToBase64String(tokenBytes);
+
+        // Hash the token with SHA256 before storing in database
+        var hashedToken = HashToken(token);
+        user.ResetToken = hashedToken;
+        user.TokenExpiry = DateTime.UtcNow.AddHours(ApplicationConstants.Authentication.PasswordResetTokenExpirationHours);
 
         await _context.SaveChangesAsync();
+
+        // Return the plain token to be sent via email
         return token;
     }
 
     public async Task<bool> ValidateResetTokenAsync(string token)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.ResetToken == token);
+        // Hash the provided token to compare with stored hash
+        var hashedToken = HashToken(token);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.ResetToken == hashedToken);
         if (user == null || user.TokenExpiry == null || user.TokenExpiry < DateTime.UtcNow)
             return false;
 
@@ -92,7 +100,9 @@ public class AuthService : IAuthService
 
     public async Task<bool> ResetPasswordAsync(string token, string newPassword)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.ResetToken == token);
+        // Hash the provided token to compare with stored hash
+        var hashedToken = HashToken(token);
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.ResetToken == hashedToken);
         if (user == null || user.TokenExpiry == null || user.TokenExpiry < DateTime.UtcNow)
             return false;
 
@@ -104,11 +114,15 @@ public class AuthService : IAuthService
         return true;
     }
 
-    private static string ComputeMd5Hash(string input)
+    /// <summary>
+    /// Hashes a token using SHA256 for secure storage in the database.
+    /// This ensures that if the database is compromised, reset tokens cannot be used directly.
+    /// </summary>
+    private static string HashToken(string token)
     {
-        using var md5 = MD5.Create();
-        var inputBytes = Encoding.UTF8.GetBytes(input);
-        var hashBytes = md5.ComputeHash(inputBytes);
+        using var sha256 = SHA256.Create();
+        var tokenBytes = Encoding.UTF8.GetBytes(token);
+        var hashBytes = sha256.ComputeHash(tokenBytes);
         return Convert.ToHexString(hashBytes).ToLower();
     }
 }

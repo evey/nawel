@@ -60,6 +60,9 @@ public class User
     [Column("isChildren")]
     public bool IsChildren { get; set; } = false;
 
+    [Column("is_admin")]
+    public bool IsAdmin { get; set; } = false;
+
     [Required]
     [Column("family_id")]
     public int FamilyId { get; set; }

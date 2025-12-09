@@ -8,9 +8,13 @@ using System.Security.Claims;
 
 namespace Nawel.Api.Controllers;
 
+/// <summary>
+/// Contrôleur pour les fonctionnalités d'administration (utilisateurs, familles, statistiques).
+/// Tous les endpoints nécessitent le rôle administrateur.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = "AdminOnly")] // All admin endpoints require admin role
 public class AdminController : ControllerBase
 {
     private readonly NawelDbContext _context;
@@ -24,21 +28,19 @@ public class AdminController : ControllerBase
         _configuration = configuration;
     }
 
-    private bool IsAdmin()
-    {
-        var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-        return currentUserId == 1; // User ID 1 is admin
-    }
-
-    // GET: api/admin/stats
+    /// <summary>
+    /// Récupère les statistiques globales de l'application (utilisateurs, familles, cadeaux, API OpenGraph).
+    /// </summary>
+    /// <returns>Les statistiques de l'application pour l'année en cours et les 12 derniers mois.</returns>
+    /// <response code="200">Statistiques récupérées avec succès.</response>
+    /// <response code="401">Non autorisé (réservé aux administrateurs).</response>
+    /// <response code="500">Erreur serveur lors de la récupération des statistiques.</response>
     [HttpGet("stats")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> GetStats()
     {
-        if (!IsAdmin())
-        {
-            return Forbid();
-        }
-
         try
         {
             var currentYear = DateTime.UtcNow.Year;
@@ -86,15 +88,19 @@ public class AdminController : ControllerBase
         }
     }
 
-    // GET: api/admin/users
+    /// <summary>
+    /// Récupère la liste de tous les utilisateurs (sauf l'admin système).
+    /// </summary>
+    /// <returns>La liste complète des utilisateurs avec leurs familles.</returns>
+    /// <response code="200">Liste des utilisateurs récupérée avec succès.</response>
+    /// <response code="401">Non autorisé (réservé aux administrateurs).</response>
+    /// <response code="500">Erreur serveur lors de la récupération des utilisateurs.</response>
     [HttpGet("users")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> GetAllUsers()
     {
-        if (!IsAdmin())
-        {
-            return Forbid();
-        }
-
         try
         {
             var users = await _context.Users
@@ -112,6 +118,7 @@ public class AdminController : ControllerBase
                     u.Avatar,
                     u.Pseudo,
                     u.IsChildren,
+                    u.IsAdmin,
                     u.FamilyId,
                     FamilyName = u.Family!.Name,
                     u.CreatedAt
@@ -127,15 +134,22 @@ public class AdminController : ControllerBase
         }
     }
 
-    // POST: api/admin/users
+    /// <summary>
+    /// Crée un nouvel utilisateur et sa liste de cadeaux associée.
+    /// </summary>
+    /// <param name="dto">Les informations du nouvel utilisateur (login, password, email, firstName, lastName, familyId, isChildren, isAdmin).</param>
+    /// <returns>Un message de confirmation avec l'ID du nouvel utilisateur.</returns>
+    /// <response code="200">Utilisateur créé avec succès.</response>
+    /// <response code="400">Login ou email déjà existant.</response>
+    /// <response code="401">Non autorisé (réservé aux administrateurs).</response>
+    /// <response code="500">Erreur serveur lors de la création de l'utilisateur.</response>
     [HttpPost("users")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> CreateUser([FromBody] CreateUserDto dto)
     {
-        if (!IsAdmin())
-        {
-            return Forbid();
-        }
-
         try
         {
             // Check if login already exists
@@ -159,6 +173,7 @@ public class AdminController : ControllerBase
                 LastName = dto.LastName,
                 FamilyId = dto.FamilyId,
                 IsChildren = dto.IsChildren,
+                IsAdmin = dto.IsAdmin,
                 Avatar = "avatar.png"
             };
 
@@ -184,15 +199,25 @@ public class AdminController : ControllerBase
         }
     }
 
-    // PUT: api/admin/users/{id}
+    /// <summary>
+    /// Met à jour les informations d'un utilisateur existant.
+    /// </summary>
+    /// <param name="id">L'ID de l'utilisateur à modifier.</param>
+    /// <param name="dto">Les nouvelles informations de l'utilisateur (email, firstName, lastName, familyId, isChildren, isAdmin).</param>
+    /// <returns>Un message de confirmation.</returns>
+    /// <response code="200">Utilisateur mis à jour avec succès.</response>
+    /// <response code="400">Tentative de modification de l'utilisateur admin système.</response>
+    /// <response code="401">Non autorisé (réservé aux administrateurs).</response>
+    /// <response code="404">Utilisateur non trouvé.</response>
+    /// <response code="500">Erreur serveur lors de la mise à jour.</response>
     [HttpPut("users/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UpdateUser(int id, [FromBody] UpdateUserAdminDto dto)
     {
-        if (!IsAdmin())
-        {
-            return Forbid();
-        }
-
         try
         {
             var user = await _context.Users.FindAsync(id);
@@ -212,6 +237,7 @@ public class AdminController : ControllerBase
             if (dto.LastName != null) user.LastName = dto.LastName;
             if (dto.FamilyId.HasValue) user.FamilyId = dto.FamilyId.Value;
             if (dto.IsChildren.HasValue) user.IsChildren = dto.IsChildren.Value;
+            if (dto.IsAdmin.HasValue) user.IsAdmin = dto.IsAdmin.Value;
 
             await _context.SaveChangesAsync();
 
@@ -224,15 +250,24 @@ public class AdminController : ControllerBase
         }
     }
 
-    // DELETE: api/admin/users/{id}
+    /// <summary>
+    /// Supprime un utilisateur de l'application.
+    /// </summary>
+    /// <param name="id">L'ID de l'utilisateur à supprimer.</param>
+    /// <returns>Un message de confirmation.</returns>
+    /// <response code="200">Utilisateur supprimé avec succès.</response>
+    /// <response code="400">Tentative de suppression de l'utilisateur admin système.</response>
+    /// <response code="401">Non autorisé (réservé aux administrateurs).</response>
+    /// <response code="404">Utilisateur non trouvé.</response>
+    /// <response code="500">Erreur serveur lors de la suppression.</response>
     [HttpDelete("users/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteUser(int id)
     {
-        if (!IsAdmin())
-        {
-            return Forbid();
-        }
-
         try
         {
             var user = await _context.Users.FindAsync(id);
@@ -258,15 +293,19 @@ public class AdminController : ControllerBase
         }
     }
 
-    // GET: api/admin/families
+    /// <summary>
+    /// Récupère la liste de toutes les familles avec le nombre d'utilisateurs.
+    /// </summary>
+    /// <returns>La liste des familles avec leur nombre d'utilisateurs.</returns>
+    /// <response code="200">Liste des familles récupérée avec succès.</response>
+    /// <response code="401">Non autorisé (réservé aux administrateurs).</response>
+    /// <response code="500">Erreur serveur lors de la récupération des familles.</response>
     [HttpGet("families")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> GetAllFamilies()
     {
-        if (!IsAdmin())
-        {
-            return Forbid();
-        }
-
         try
         {
             var families = await _context.Families
@@ -289,15 +328,22 @@ public class AdminController : ControllerBase
         }
     }
 
-    // POST: api/admin/families
+    /// <summary>
+    /// Crée une nouvelle famille.
+    /// </summary>
+    /// <param name="dto">Le nom de la nouvelle famille.</param>
+    /// <returns>Un message de confirmation avec l'ID de la nouvelle famille.</returns>
+    /// <response code="200">Famille créée avec succès.</response>
+    /// <response code="400">Une famille avec ce nom existe déjà.</response>
+    /// <response code="401">Non autorisé (réservé aux administrateurs).</response>
+    /// <response code="500">Erreur serveur lors de la création.</response>
     [HttpPost("families")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> CreateFamily([FromBody] CreateFamilyDto dto)
     {
-        if (!IsAdmin())
-        {
-            return Forbid();
-        }
-
         try
         {
             if (await _context.Families.AnyAsync(f => f.Name == dto.Name))
@@ -322,15 +368,23 @@ public class AdminController : ControllerBase
         }
     }
 
-    // PUT: api/admin/families/{id}
+    /// <summary>
+    /// Met à jour le nom d'une famille existante.
+    /// </summary>
+    /// <param name="id">L'ID de la famille à modifier.</param>
+    /// <param name="dto">Le nouveau nom de la famille.</param>
+    /// <returns>Un message de confirmation.</returns>
+    /// <response code="200">Famille mise à jour avec succès.</response>
+    /// <response code="401">Non autorisé (réservé aux administrateurs).</response>
+    /// <response code="404">Famille non trouvée.</response>
+    /// <response code="500">Erreur serveur lors de la mise à jour.</response>
     [HttpPut("families/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UpdateFamily(int id, [FromBody] UpdateFamilyDto dto)
     {
-        if (!IsAdmin())
-        {
-            return Forbid();
-        }
-
         try
         {
             var family = await _context.Families.FindAsync(id);
@@ -351,15 +405,24 @@ public class AdminController : ControllerBase
         }
     }
 
-    // DELETE: api/admin/families/{id}
+    /// <summary>
+    /// Supprime une famille (uniquement si elle ne contient aucun utilisateur).
+    /// </summary>
+    /// <param name="id">L'ID de la famille à supprimer.</param>
+    /// <returns>Un message de confirmation.</returns>
+    /// <response code="200">Famille supprimée avec succès.</response>
+    /// <response code="400">La famille contient des utilisateurs et ne peut pas être supprimée.</response>
+    /// <response code="401">Non autorisé (réservé aux administrateurs).</response>
+    /// <response code="404">Famille non trouvée.</response>
+    /// <response code="500">Erreur serveur lors de la suppression.</response>
     [HttpDelete("families/{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteFamily(int id)
     {
-        if (!IsAdmin())
-        {
-            return Forbid();
-        }
-
         try
         {
             var family = await _context.Families

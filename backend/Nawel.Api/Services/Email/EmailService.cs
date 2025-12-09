@@ -2,27 +2,26 @@ using System.Net;
 using System.Net.Mail;
 using Microsoft.EntityFrameworkCore;
 using Nawel.Api.Data;
+using Nawel.Api.Configuration;
 
 namespace Nawel.Api.Services.Email;
 
 public class EmailService : IEmailService
 {
-    private readonly IConfiguration _configuration;
+    private readonly EmailSettings _emailSettings;
     private readonly ILogger<EmailService> _logger;
     private readonly NawelDbContext _context;
-    private readonly bool _isEnabled;
 
-    public EmailService(IConfiguration configuration, ILogger<EmailService> logger, NawelDbContext context)
+    public EmailService(EmailSettings emailSettings, ILogger<EmailService> logger, NawelDbContext context)
     {
-        _configuration = configuration;
+        _emailSettings = emailSettings;
         _logger = logger;
         _context = context;
-        _isEnabled = _configuration.GetValue<bool>("Email:Enabled");
     }
 
     public async Task SendEmailAsync(string to, string subject, string htmlBody)
     {
-        if (!_isEnabled)
+        if (!_emailSettings.Enabled)
         {
             _logger.LogInformation("Email sending is disabled. Would have sent to {To}: {Subject}", to, subject);
             return;
@@ -30,25 +29,17 @@ public class EmailService : IEmailService
 
         try
         {
-            var smtpHost = _configuration["Email:SmtpHost"];
-            var smtpPort = _configuration.GetValue<int>("Email:SmtpPort");
-            var smtpUsername = _configuration["Email:SmtpUsername"];
-            var smtpPassword = _configuration["Email:SmtpPassword"];
-            var fromEmail = _configuration["Email:FromEmail"];
-            var fromName = _configuration["Email:FromName"];
-            var useSsl = _configuration.GetValue<bool>("Email:UseSsl", true);
-
             using var message = new MailMessage();
-            message.From = new MailAddress(fromEmail, fromName);
+            message.From = new MailAddress(_emailSettings.FromEmail, _emailSettings.FromName);
             message.To.Add(new MailAddress(to));
             message.Subject = subject;
             message.Body = htmlBody;
             message.IsBodyHtml = true;
 
-            using var smtpClient = new SmtpClient(smtpHost, smtpPort);
-            smtpClient.EnableSsl = useSsl;
+            using var smtpClient = new SmtpClient(_emailSettings.SmtpHost, _emailSettings.SmtpPort);
+            smtpClient.EnableSsl = _emailSettings.UseSsl;
             smtpClient.UseDefaultCredentials = false;
-            smtpClient.Credentials = new NetworkCredential(smtpUsername, smtpPassword);
+            smtpClient.Credentials = new NetworkCredential(_emailSettings.SmtpUsername, _emailSettings.SmtpPassword);
 
             await smtpClient.SendMailAsync(message);
             _logger.LogInformation("Email sent successfully to {To}", to);
@@ -351,5 +342,86 @@ public class EmailService : IEmailService
 
             await SendEmailAsync(user.Email!, subject, htmlBody);
         }
+    }
+
+    public async Task SendMigrationResetEmailAsync(string toEmail, string userName, string resetToken)
+    {
+        var subject = "🔐 Mise à jour de sécurité - Réinitialisation de mot de passe requise";
+
+        var resetUrl = $"http://localhost:5173/reset-password?token={resetToken}";
+
+        var htmlBody = $@"
+<!DOCTYPE html>
+<html lang=""fr"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+</head>
+<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;"">
+    <div style=""background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;"">
+        <h1 style=""margin: 0; font-size: 28px;"">🔐 Mise à jour de sécurité</h1>
+    </div>
+
+    <div style=""background-color: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;"">
+        <div style=""background-color: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);"">
+            <h2 style=""color: #667eea; margin-top: 0;"">Bonjour {userName},</h2>
+
+            <p style=""font-size: 16px; line-height: 1.8;"">
+                Pour améliorer la sécurité de votre compte <strong>Nawel</strong>, nous avons mis à niveau notre système de protection des mots de passe.
+            </p>
+
+            <div style=""background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;"">
+                <p style=""margin: 0; font-weight: bold; color: #856404;"">
+                    ⚠️ Votre mot de passe doit être réinitialisé pour continuer à utiliser votre compte.
+                </p>
+            </div>
+
+            <p style=""font-size: 16px; line-height: 1.8;"">
+                Cliquez sur le bouton ci-dessous pour créer un nouveau mot de passe sécurisé :
+            </p>
+
+            <div style=""text-align: center; margin: 30px 0;"">
+                <a href=""{resetUrl}""
+                   style=""background-color: #4CAF50; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"">
+                    Réinitialiser mon mot de passe
+                </a>
+            </div>
+
+            <p style=""font-size: 14px; color: #666; margin-top: 30px;"">
+                <em>Ce lien est valide pendant 24 heures.</em>
+            </p>
+
+            <div style=""background-color: #e8f5e9; border-left: 4px solid #4CAF50; padding: 15px; margin: 20px 0; border-radius: 5px;"">
+                <p style=""margin: 0; font-size: 14px; color: #2e7d32;"">
+                    ℹ️ <strong>Pourquoi ce changement ?</strong><br>
+                    Nous utilisons désormais un système de chiffrement plus robuste pour protéger vos données. Cette mise à jour est automatique et gratuite.
+                </p>
+            </div>
+
+            <hr style=""border: none; border-top: 1px solid #eee; margin: 30px 0;"">
+
+            <p style=""font-size: 13px; color: #999;"">
+                Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email.<br>
+                Votre mot de passe actuel reste inchangé jusqu'à ce que vous en créiez un nouveau.
+            </p>
+
+            <p style=""font-size: 13px; color: #999; margin-top: 20px;"">
+                Si le bouton ne fonctionne pas, copiez et collez ce lien dans votre navigateur :<br>
+                <a href=""{resetUrl}"" style=""color: #667eea; word-break: break-all;"">{resetUrl}</a>
+            </p>
+        </div>
+
+        <div style=""text-align: center; padding: 20px; color: #666; font-size: 12px;"">
+            <p>Nawel - Votre liste de cadeaux de Noël 🎅</p>
+            <p style=""margin-top: 10px;"">
+                Cette opération est nécessaire pour garantir la sécurité de votre compte.
+            </p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        await SendEmailAsync(toEmail, subject, htmlBody);
+        _logger.LogInformation("Migration reset email sent to {Email} for user {UserName}", toEmail, userName);
     }
 }

@@ -1,0 +1,81 @@
+// Styles pour la page MyList
+.container {
+  margin-top: 16px;
+  margin-bottom: 32px;
+  padding-left: 16px;
+  padding-right: 16px;
+
+  @media (min-width: 600px) {
+    margin-top: 32px;
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  gap: 16px;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 1.5rem;
+
+  @media (min-width: 600px) {
+    font-size: 2.125rem;
+  }
+}
+
+.yearSelect {
+  min-width: 120px;
+}
+
+.headerRight {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+
+  @media (min-width: 600px) {
+    width: auto;
+  }
+}
+
+.actionButton {
+  min-width: auto;
+
+  @media (min-width: 600px) {
+    min-width: 120px;
+  }
+}
+
+.emptyState {
+  text-align: center;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.alertContainer {
+  margin-bottom: 24px;
+}

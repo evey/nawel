@@ -117,8 +117,8 @@ public class NawelDbContext : DbContext
         {
             if (entry.State == EntityState.Added)
             {
-                if (entry.Property("CreatedAt").CurrentValue == null ||
-                    (DateTime)entry.Property("CreatedAt").CurrentValue == default)
+                var createdAtValue = entry.Property("CreatedAt").CurrentValue;
+                if (createdAtValue == null || (createdAtValue is DateTime dt && dt == default))
                 {
                     entry.Property("CreatedAt").CurrentValue = DateTime.UtcNow;
                 }

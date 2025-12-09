@@ -1,0 +1,78 @@
+// Styles pour UserGiftListItem
+.listItem {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0;
+  }
+}
+
+.titleContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.giftTitle {
+  font-size: 1.1rem;
+
+  @media (min-width: 600px) {
+    font-size: 1.25rem;
+  }
+}
+
+.secondaryInfo {
+  margin-top: 8px;
+}
+
+.description {
+  margin-bottom: 8px;
+}
+
+.link {
+  margin-bottom: 4px;
+}
+
+.price {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.commentAlert {
+  margin-top: 8px;
+}
+
+.commentContent {
+  white-space: pre-wrap;
+  display: block;
+  margin-top: 4px;
+}
+
+.actions {
+  margin-left: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  width: 100%;
+
+  @media (min-width: 600px) {
+    margin-left: 16px;
+    flex-direction: column;
+    width: auto;
+  }
+}
+
+.actionButton {
+  min-width: auto;
+
+  @media (min-width: 600px) {
+    min-width: 100px;
+  }
+}

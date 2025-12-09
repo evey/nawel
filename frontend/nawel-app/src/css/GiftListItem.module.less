@@ -1,0 +1,89 @@
+// Styles pour GiftListItem
+.listItem {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 16px;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    gap: 0;
+  }
+}
+
+.giftImage {
+  width: 100%;
+  min-height: 150px;
+  max-height: 250px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 0;
+  flex-shrink: 0;
+  align-self: center;
+
+  @media (min-width: 600px) {
+    width: 120px;
+    min-height: 100px;
+    max-height: 200px;
+    margin-right: 16px;
+    align-self: stretch;
+  }
+}
+
+.listItemText {
+  width: 100%;
+}
+
+.titleContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.giftTitle {
+  font-size: 1.1rem;
+
+  @media (min-width: 600px) {
+    font-size: 1.25rem;
+  }
+}
+
+.secondaryInfo {
+  margin-top: 8px;
+}
+
+.description {
+  margin-top: 4px;
+}
+
+.link {
+  margin-top: 4px;
+}
+
+.price {
+  margin-top: 4px;
+  font-weight: bold;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 0;
+  margin-left: 0;
+  padding-left: 0;
+  width: 100%;
+  justify-content: flex-end;
+
+  @media (min-width: 600px) {
+    margin-left: auto;
+    padding-left: 16px;
+    width: auto;
+    justify-content: flex-start;
+  }
+}
+
+.actionButton {
+  flex-shrink: 0;
+}

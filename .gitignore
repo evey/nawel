@@ -17,6 +17,7 @@ backend/**/*.suo
 backend/**/.vs/
 backend/**/appsettings.Development.json
 backend/**/appsettings.Local.json
+backend/**/appsettings.Production.json
 
 # Frontend (Node.js)
 frontend/**/node_modules/
@@ -50,6 +51,9 @@ docker-compose.override.yml
 *.pem
 secrets.txt
 .env
+
+# AI-generated files
+.claude/*
 
 # Windows special files
 nul

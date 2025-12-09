@@ -23,4 +23,6 @@ public class CreateUserDto
     public int FamilyId { get; set; }
 
     public bool IsChildren { get; set; } = false;
+
+    public bool IsAdmin { get; set; } = false;
 }

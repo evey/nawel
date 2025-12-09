@@ -7,4 +7,5 @@ public interface IEmailService
     Task SendGiftParticipationNotificationsAsync(int listOwnerId, string listOwnerName, string giftName, string participantName, string? comment = null);
     Task SendListEditedNotificationsAsync(int listOwnerId, string listOwnerName, List<string>? modifications = null);
     Task SendReservationNotificationsAsync(int listOwnerId, string listOwnerName, List<ReservationAction> actions);
+    Task SendMigrationResetEmailAsync(string toEmail, string userName, string resetToken);
 }

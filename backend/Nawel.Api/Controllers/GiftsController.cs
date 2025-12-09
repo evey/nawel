@@ -3,12 +3,16 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Nawel.Api.Data;
 using Nawel.Api.DTOs;
+using Nawel.Api.Extensions;
 using Nawel.Api.Models;
 using Nawel.Api.Services.Email;
 using System.Security.Claims;
 
 namespace Nawel.Api.Controllers;
 
+/// <summary>
+/// Contrôleur pour la gestion des cadeaux (CRUD, réservations, imports, cadeaux groupés).
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -29,8 +33,17 @@ public class GiftsController : ControllerBase
         _reservationNotificationDebouncer = reservationNotificationDebouncer;
     }
 
-    // GET: api/gifts/years
+    /// <summary>
+    /// Récupère la liste des années pour lesquelles l'utilisateur a des cadeaux dans sa liste.
+    /// </summary>
+    /// <returns>La liste des années disponibles (incluant l'année en cours).</returns>
+    /// <response code="200">Liste des années récupérée avec succès.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="500">Erreur serveur lors de la récupération.</response>
     [HttpGet("years")]
+    [ProducesResponseType(typeof(IEnumerable<int>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<int>>> GetAvailableYears()
     {
         try
@@ -67,8 +80,22 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // POST: api/gifts/import-from-year/{year}
+    /// <summary>
+    /// Importe les cadeaux non réservés d'une année passée vers l'année en cours.
+    /// </summary>
+    /// <param name="year">L'année source depuis laquelle importer les cadeaux.</param>
+    /// <returns>Le nombre de cadeaux importés.</returns>
+    /// <response code="200">Cadeaux importés avec succès (ou aucun cadeau à importer).</response>
+    /// <response code="400">Tentative d'import depuis l'année en cours ou future.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="404">Liste de l'utilisateur non trouvée.</response>
+    /// <response code="500">Erreur serveur lors de l'import.</response>
     [HttpPost("import-from-year/{year}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> ImportUnpurchasedGifts(int year)
     {
         try
@@ -126,8 +153,18 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // GET: api/gifts/my-list
+    /// <summary>
+    /// Récupère la liste des cadeaux de l'utilisateur connecté pour une année donnée.
+    /// </summary>
+    /// <param name="year">L'année pour laquelle récupérer les cadeaux (année en cours par défaut).</param>
+    /// <returns>La liste des cadeaux avec leurs statuts (réservé, cadeaux groupés, etc.).</returns>
+    /// <response code="200">Liste des cadeaux récupérée avec succès.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="500">Erreur serveur lors de la récupération.</response>
     [HttpGet("my-list")]
+    [ProducesResponseType(typeof(IEnumerable<GiftDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<GiftDto>>> GetMyGifts([FromQuery] int? year = null)
     {
         try
@@ -150,26 +187,11 @@ public class GiftsController : ControllerBase
                     .ThenInclude(p => p.User)
                 .Where(g => g.ListId == userList.Id && g.Year == currentYear)
                 .OrderBy(g => g.Name)
-                .Select(g => new GiftDto
-                {
-                    Id = g.Id,
-                    Name = g.Name,
-                    Description = g.Description,
-                    Url = g.Link,
-                    ImageUrl = g.Image,
-                    Price = g.Cost,
-                    Year = g.Year,
-                    IsTaken = !g.Available,
-                    TakenByUserId = g.TakenBy,
-                    TakenByUserName = g.TakenByUser != null ? g.TakenByUser.FirstName ?? g.TakenByUser.Login : null,
-                    Comment = g.Comment,
-                    IsGroupGift = g.IsGroupGift,
-                    ParticipantCount = g.Participations.Count,
-                    ParticipantNames = g.Participations.Select(p => p.User.FirstName ?? p.User.Login).ToList()
-                })
                 .ToListAsync();
 
-            return Ok(gifts);
+            var giftDtos = gifts.Select(g => g.ToDto()).ToList();
+
+            return Ok(giftDtos);
         }
         catch (Exception ex)
         {
@@ -178,8 +200,23 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // GET: api/gifts/manage-child/{childId}
+    /// <summary>
+    /// Récupère la liste des cadeaux d'un enfant (pour gestion parent).
+    /// </summary>
+    /// <param name="childId">L'ID de l'enfant.</param>
+    /// <param name="year">L'année pour laquelle récupérer les cadeaux (année en cours par défaut).</param>
+    /// <returns>La liste des cadeaux de l'enfant.</returns>
+    /// <response code="200">Liste des cadeaux récupérée avec succès.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="403">L'utilisateur n'est pas le parent de cet enfant.</response>
+    /// <response code="404">Enfant ou liste non trouvée.</response>
+    /// <response code="500">Erreur serveur lors de la récupération.</response>
     [HttpGet("manage-child/{childId}")]
+    [ProducesResponseType(typeof(IEnumerable<GiftDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<GiftDto>>> GetChildGifts(int childId, [FromQuery] int? year = null)
     {
         try
@@ -238,26 +275,11 @@ public class GiftsController : ControllerBase
                     .ThenInclude(p => p.User)
                 .Where(g => g.ListId == childList.Id && g.Year == currentYear)
                 .OrderBy(g => g.Name)
-                .Select(g => new GiftDto
-                {
-                    Id = g.Id,
-                    Name = g.Name,
-                    Description = g.Description,
-                    Url = g.Link,
-                    ImageUrl = g.Image,
-                    Price = g.Cost,
-                    Year = g.Year,
-                    IsTaken = !g.Available,
-                    TakenByUserId = g.TakenBy,
-                    TakenByUserName = g.TakenByUser != null ? g.TakenByUser.FirstName ?? g.TakenByUser.Login : null,
-                    Comment = g.Comment,
-                    IsGroupGift = g.IsGroupGift,
-                    ParticipantCount = g.Participations.Count,
-                    ParticipantNames = g.Participations.Select(p => p.User.FirstName ?? p.User.Login).ToList()
-                })
                 .ToListAsync();
 
-            return Ok(gifts);
+            var giftDtos = gifts.Select(g => g.ToDto()).ToList();
+
+            return Ok(giftDtos);
         }
         catch (Exception ex)
         {
@@ -266,8 +288,21 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // GET: api/gifts/{userId}
+    /// <summary>
+    /// Récupère la liste des cadeaux d'un autre utilisateur pour consultation/réservation.
+    /// </summary>
+    /// <param name="userId">L'ID de l'utilisateur dont on veut consulter la liste.</param>
+    /// <param name="year">L'année pour laquelle récupérer les cadeaux (année en cours par défaut).</param>
+    /// <returns>La liste des cadeaux de l'utilisateur avec statuts de réservation.</returns>
+    /// <response code="200">Liste des cadeaux récupérée avec succès.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="404">Utilisateur ou liste non trouvée.</response>
+    /// <response code="500">Erreur serveur lors de la récupération.</response>
     [HttpGet("{userId}")]
+    [ProducesResponseType(typeof(IEnumerable<GiftDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<GiftDto>>> GetUserGifts(int userId, [FromQuery] int? year = null)
     {
         try
@@ -295,26 +330,11 @@ public class GiftsController : ControllerBase
                     .ThenInclude(p => p.User)
                 .Where(g => g.ListId == userList.Id && g.Year == currentYear)
                 .OrderBy(g => g.Name)
-                .Select(g => new GiftDto
-                {
-                    Id = g.Id,
-                    Name = g.Name,
-                    Description = g.Description,
-                    Url = g.Link,
-                    ImageUrl = g.Image,
-                    Price = g.Cost,
-                    Year = g.Year,
-                    IsTaken = !g.Available,
-                    TakenByUserId = g.TakenBy,
-                    TakenByUserName = g.TakenByUser != null ? g.TakenByUser.FirstName ?? g.TakenByUser.Login : null,
-                    Comment = g.Comment,
-                    IsGroupGift = g.IsGroupGift,
-                    ParticipantCount = g.Participations.Count,
-                    ParticipantNames = g.Participations.Select(p => p.User.FirstName ?? p.User.Login).ToList()
-                })
                 .ToListAsync();
 
-            return Ok(gifts);
+            var giftDtos = gifts.Select(g => g.ToDto()).ToList();
+
+            return Ok(giftDtos);
         }
         catch (Exception ex)
         {
@@ -323,8 +343,25 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // POST: api/gifts/manage-child/{childId}
+    /// <summary>
+    /// Crée un nouveau cadeau pour un enfant (gestion parent).
+    /// </summary>
+    /// <param name="childId">L'ID de l'enfant.</param>
+    /// <param name="giftDto">Les informations du nouveau cadeau.</param>
+    /// <returns>Le cadeau créé avec son ID.</returns>
+    /// <response code="200">Cadeau créé avec succès.</response>
+    /// <response code="400">Données invalides ou utilisateur cible n'est pas un enfant.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="403">L'utilisateur n'est pas adulte ou pas dans la même famille que l'enfant.</response>
+    /// <response code="404">Utilisateur ou enfant non trouvé, ou liste non trouvée.</response>
+    /// <response code="500">Erreur serveur lors de la création.</response>
     [HttpPost("manage-child/{childId}")]
+    [ProducesResponseType(typeof(GiftDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<GiftDto>> CreateGiftForChild(int childId, [FromBody] CreateGiftDto giftDto)
     {
         try
@@ -430,8 +467,23 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // POST: api/gifts
+    /// <summary>
+    /// Crée un nouveau cadeau dans la liste de l'utilisateur connecté.
+    /// </summary>
+    /// <param name="giftDto">Les informations du nouveau cadeau (nom, description, lien, prix, image, isGroupGift, etc.).</param>
+    /// <returns>Le cadeau créé avec son ID.</returns>
+    /// <response code="201">Cadeau créé avec succès.</response>
+    /// <response code="400">Données invalides.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="500">Erreur serveur lors de la création.</response>
+    /// <remarks>
+    /// Si l'utilisateur n'a pas encore de liste, une liste est automatiquement créée.
+    /// </remarks>
     [HttpPost]
+    [ProducesResponseType(typeof(GiftDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<GiftDto>> CreateGift([FromBody] CreateGiftDto giftDto)
     {
         try
@@ -505,8 +557,28 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // PUT: api/gifts/{id}
+    /// <summary>
+    /// Met à jour un cadeau existant dans la liste de l'utilisateur connecté.
+    /// </summary>
+    /// <param name="id">L'ID du cadeau à mettre à jour.</param>
+    /// <param name="updateDto">Les nouvelles informations du cadeau.</param>
+    /// <returns>Le cadeau mis à jour.</returns>
+    /// <response code="200">Cadeau mis à jour avec succès.</response>
+    /// <response code="400">Données invalides.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="403">Le cadeau n'appartient pas à l'utilisateur.</response>
+    /// <response code="404">Cadeau non trouvé.</response>
+    /// <response code="500">Erreur serveur lors de la mise à jour.</response>
+    /// <remarks>
+    /// Les notifications d'édition de liste sont envoyées aux autres utilisateurs ayant réservé ce cadeau (avec debouncing de 2 minutes).
+    /// </remarks>
     [HttpPut("{id}")]
+    [ProducesResponseType(typeof(GiftDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<GiftDto>> UpdateGift(int id, [FromBody] UpdateGiftDto updateDto)
     {
         try
@@ -598,8 +670,22 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // DELETE: api/gifts/{id}
+    /// <summary>
+    /// Supprime un cadeau de la liste de l'utilisateur connecté.
+    /// </summary>
+    /// <param name="id">L'ID du cadeau à supprimer.</param>
+    /// <returns>Un message de confirmation.</returns>
+    /// <response code="200">Cadeau supprimé avec succès.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="403">Le cadeau n'appartient pas à l'utilisateur.</response>
+    /// <response code="404">Cadeau non trouvé.</response>
+    /// <response code="500">Erreur serveur lors de la suppression.</response>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteGift(int id)
     {
         try
@@ -669,8 +755,28 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // POST: api/gifts/{id}/reserve
+    /// <summary>
+    /// Réserve un cadeau (ou participe à un cadeau groupé).
+    /// </summary>
+    /// <param name="id">L'ID du cadeau à réserver.</param>
+    /// <param name="reserveDto">Commentaire optionnel pour la réservation.</param>
+    /// <returns>Un message de confirmation.</returns>
+    /// <response code="200">Cadeau réservé avec succès (ou participation ajoutée pour cadeau groupé).</response>
+    /// <response code="400">Cadeau déjà entièrement réservé, ou tentative de réserver son propre cadeau.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="404">Cadeau non trouvé.</response>
+    /// <response code="500">Erreur serveur lors de la réservation.</response>
+    /// <remarks>
+    /// Pour les cadeaux groupés, l'utilisateur est ajouté à la liste des participants.
+    /// Pour les cadeaux classiques, le cadeau est marqué comme pris par cet utilisateur.
+    /// Les notifications de réservation sont envoyées au propriétaire du cadeau (avec debouncing de 2 minutes).
+    /// </remarks>
     [HttpPost("{id}/reserve")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> ReserveGift(int id, [FromBody] ReserveGiftDto? reserveDto = null)
     {
         try
@@ -686,63 +792,15 @@ public class GiftsController : ControllerBase
                 return NotFound(new { message = "Gift not found" });
             }
 
-            // Can't reserve own gift
-            if (gift.List?.UserId == currentUserId)
+            // Validate permissions
+            var validationError = await ValidateReservationPermissions(gift, currentUserId, id);
+            if (validationError != null)
             {
-                return BadRequest(new { message = "Cannot reserve your own gift" });
+                return validationError;
             }
 
-            // Check if user is already participating
-            var existingParticipation = await _context.GiftParticipations
-                .FirstOrDefaultAsync(p => p.GiftId == id && p.UserId == currentUserId);
-
-            if (existingParticipation != null)
-            {
-                return BadRequest(new { message = "Already participating in this gift" });
-            }
-
-            // If gift is already taken by someone else (not group gift), convert to group gift
-            if (!gift.Available && !gift.IsGroupGift && gift.TakenBy.HasValue && gift.TakenBy.Value != currentUserId)
-            {
-                // Convert to group gift: add original reserver as first participant
-                gift.IsGroupGift = true;
-
-                var originalParticipation = new GiftParticipation
-                {
-                    GiftId = id,
-                    UserId = gift.TakenBy.Value
-                };
-                _context.GiftParticipations.Add(originalParticipation);
-
-                // Add new participant
-                var newParticipation = new GiftParticipation
-                {
-                    GiftId = id,
-                    UserId = currentUserId
-                };
-                _context.GiftParticipations.Add(newParticipation);
-            }
-            else if (gift.IsGroupGift || (!gift.Available && gift.IsGroupGift))
-            {
-                // Already a group gift, just add participation
-                var participation = new GiftParticipation
-                {
-                    GiftId = id,
-                    UserId = currentUserId
-                };
-                _context.GiftParticipations.Add(participation);
-            }
-            else if (gift.Available)
-            {
-                // First reservation: single gift reservation
-                gift.Available = false;
-                gift.TakenBy = currentUserId;
-            }
-            else
-            {
-                // Gift already reserved by current user (shouldn't happen but just in case)
-                return BadRequest(new { message = "Gift already reserved" });
-            }
+            // Process reservation
+            ProcessReservation(gift, id, currentUserId);
 
             // Add comment if provided
             if (!string.IsNullOrWhiteSpace(reserveDto?.Comment))
@@ -752,24 +810,8 @@ public class GiftsController : ControllerBase
 
             await _context.SaveChangesAsync();
 
-            // Schedule aggregated email notification for reservation
-            var giftOwner = await _context.Users.FindAsync(gift.List!.UserId);
-            var currentUser = await _context.Users.FindAsync(currentUserId);
-
-            if (giftOwner != null && currentUser != null)
-            {
-                var ownerName = giftOwner.FirstName ?? giftOwner.Login;
-                var reserverName = currentUser.FirstName ?? currentUser.Login;
-                var actionType = gift.IsGroupGift ? "participate" : "reserve";
-
-                _reservationNotificationDebouncer.ScheduleReservationNotification(
-                    gift.List!.UserId,
-                    ownerName,
-                    reserverName,
-                    actionType,
-                    gift.Name,
-                    gift.Comment);
-            }
+            // Send notification
+            await SendReservationNotification(gift, currentUserId);
 
             return Ok(new { message = "Gift reserved successfully" });
         }
@@ -780,8 +822,27 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // DELETE: api/gifts/{id}/reserve
+    /// <summary>
+    /// Annule la réservation d'un cadeau (ou retire la participation à un cadeau groupé).
+    /// </summary>
+    /// <param name="id">L'ID du cadeau dont on veut annuler la réservation.</param>
+    /// <returns>Un message de confirmation.</returns>
+    /// <response code="200">Réservation annulée avec succès (ou participation retirée).</response>
+    /// <response code="400">L'utilisateur n'a pas réservé ce cadeau.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="404">Cadeau non trouvé.</response>
+    /// <response code="500">Erreur serveur lors de l'annulation de la réservation.</response>
+    /// <remarks>
+    /// Pour les cadeaux groupés, retire l'utilisateur de la liste des participants.
+    /// Pour les cadeaux classiques, libère le cadeau (Available = true, TakenBy = null).
+    /// Les notifications d'annulation sont envoyées au propriétaire du cadeau (avec debouncing de 2 minutes).
+    /// </remarks>
     [HttpDelete("{id}/reserve")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> UnreserveGift(int id)
     {
         try
@@ -877,51 +938,86 @@ public class GiftsController : ControllerBase
         }
     }
 
-    // POST: api/gifts/add-test-data-2024
-    [HttpPost("add-test-data-2024")]
-    public async Task<ActionResult> AddTestData2024()
+    // Private helper methods for ReserveGift
+    private async Task<ActionResult?> ValidateReservationPermissions(Gift gift, int currentUserId, int giftId)
     {
-        try
+        // Can't reserve own gift
+        if (gift.List?.UserId == currentUserId)
         {
-            await AddTestData.AddSylvainTestGifts(_context);
-            return Ok(new { message = "Test data added successfully" });
+            return BadRequest(new { message = "Cannot reserve your own gift" });
         }
-        catch (Exception ex)
+
+        // Check if user is already participating
+        var existingParticipation = await _context.GiftParticipations
+            .FirstOrDefaultAsync(p => p.GiftId == giftId && p.UserId == currentUserId);
+
+        if (existingParticipation != null)
         {
-            _logger.LogError(ex, "Error adding test data");
-            return StatusCode(500, new { message = ex.Message });
+            return BadRequest(new { message = "Already participating in this gift" });
+        }
+
+        return null; // No validation errors
+    }
+
+    private void ProcessReservation(Gift gift, int giftId, int currentUserId)
+    {
+        // If gift is already taken by someone else (not group gift), convert to group gift
+        if (!gift.Available && !gift.IsGroupGift && gift.TakenBy.HasValue && gift.TakenBy.Value != currentUserId)
+        {
+            // Convert to group gift: add original reserver as first participant
+            gift.IsGroupGift = true;
+
+            var originalParticipation = new GiftParticipation
+            {
+                GiftId = giftId,
+                UserId = gift.TakenBy.Value
+            };
+            _context.GiftParticipations.Add(originalParticipation);
+
+            // Add new participant
+            var newParticipation = new GiftParticipation
+            {
+                GiftId = giftId,
+                UserId = currentUserId
+            };
+            _context.GiftParticipations.Add(newParticipation);
+        }
+        else if (gift.IsGroupGift || (!gift.Available && gift.IsGroupGift))
+        {
+            // Already a group gift, just add participation
+            var participation = new GiftParticipation
+            {
+                GiftId = giftId,
+                UserId = currentUserId
+            };
+            _context.GiftParticipations.Add(participation);
+        }
+        else if (gift.Available)
+        {
+            // First reservation: single gift reservation
+            gift.Available = false;
+            gift.TakenBy = currentUserId;
         }
     }
 
-    // POST: api/gifts/add-claire-test-data-2024
-    [HttpPost("add-claire-test-data-2024")]
-    public async Task<ActionResult> AddClaireTestData2024()
+    private async Task SendReservationNotification(Gift gift, int currentUserId)
     {
-        try
-        {
-            await AddTestData.AddClaireTestGifts(_context);
-            return Ok(new { message = "Test data added successfully for Claire" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error adding test data for Claire");
-            return StatusCode(500, new { message = ex.Message });
-        }
-    }
+        var giftOwner = await _context.Users.FindAsync(gift.List!.UserId);
+        var currentUser = await _context.Users.FindAsync(currentUserId);
 
-    // POST: api/gifts/add-marie-group-gift
-    [HttpPost("add-marie-group-gift")]
-    public async Task<ActionResult> AddMarieGroupGift()
-    {
-        try
+        if (giftOwner != null && currentUser != null)
         {
-            await AddTestData.AddMarieGroupGift(_context);
-            return Ok(new { message = "Group gift created successfully for Marie" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating group gift for Marie");
-            return StatusCode(500, new { message = ex.Message });
+            var ownerName = giftOwner.FirstName ?? giftOwner.Login;
+            var reserverName = currentUser.FirstName ?? currentUser.Login;
+            var actionType = gift.IsGroupGift ? "participate" : "reserve";
+
+            _reservationNotificationDebouncer.ScheduleReservationNotification(
+                gift.List!.UserId,
+                ownerName,
+                reserverName,
+                actionType,
+                gift.Name,
+                gift.Comment);
         }
     }
 }

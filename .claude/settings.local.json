@@ -19,7 +19,14 @@
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwidW5pcXVlX25hbWUiOiJzeWx2YWluIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZWlkZW50aWZpZXIiOiIyIiwiaHR0cDovL3NjaGVtYXMueG1sc29hcC5vcmcvd3MvMjAwNS8wNS9pZGVudGl0eS9jbGFpbXMvbmFtZSI6InN5bHZhaW4iLCJGaXJzdE5hbWUiOiJTeWx2YWluIiwiTGFzdE5hbWUiOiJOaXJvbmkiLCJBdmF0YXIiOiJhdmF0YXIucG5nIiwianRpIjoiYmMzZDc3ZTYtYTJkYy00NzQxLWEyZDYtYjJmNmRkZTJkNzEyIiwiZXhwIjoxNzY0ODY5MTM3LCJpc3MiOiJOYXdlbEFwaSIsImF1ZCI6Ik5hd2VsQXBwIn0.mmYANMFSdC9KPbOOAV1AjsB9m9kzGDKam0fV3Sj0lJ0\")",
       "Bash(grep:*)",
       "Bash(wmic process where \"ProcessId=4316\" delete)",
-      "Bash(wmic process where \"ProcessId=10212\" delete)"
+      "Bash(wmic process where \"ProcessId=10212\" delete)",
+      "Bash(cat:*)",
+      "Bash(wc:*)",
+      "Bash(npm install:*)",
+      "Bash(ls:*)",
+      "Bash(dotnet clean:*)",
+      "Bash(dotnet restore:*)",
+      "Bash(dotnet run:*)"
     ],
     "deny": [],
     "ask": []

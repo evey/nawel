@@ -7,6 +7,9 @@ using System.Security.Claims;
 
 namespace Nawel.Api.Controllers;
 
+/// <summary>
+/// Contrôleur pour la gestion des listes de cadeaux.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -21,7 +24,17 @@ public class ListsController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Récupère toutes les listes de cadeaux organisées par famille (sauf celle de l'utilisateur connecté).
+    /// </summary>
+    /// <returns>Les listes de cadeaux groupées par famille avec le nombre de cadeaux pour l'année en cours.</returns>
+    /// <response code="200">Listes récupérées avec succès.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="500">Erreur serveur lors de la récupération des listes.</response>
     [HttpGet]
+    [ProducesResponseType(typeof(ListsByFamilyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ListsByFamilyDto>> GetAllLists()
     {
         try
@@ -76,7 +89,19 @@ public class ListsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Récupère la liste de cadeaux de l'utilisateur connecté.
+    /// </summary>
+    /// <returns>Les informations de la liste de l'utilisateur (ID, nom, avatar, famille).</returns>
+    /// <response code="200">Liste récupérée avec succès.</response>
+    /// <response code="401">Non authentifié.</response>
+    /// <response code="404">Liste non trouvée.</response>
+    /// <response code="500">Erreur serveur lors de la récupération de la liste.</response>
     [HttpGet("mine")]
+    [ProducesResponseType(typeof(ListDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<ListDto>> GetMyList()
     {
         try

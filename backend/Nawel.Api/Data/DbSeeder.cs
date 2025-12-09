@@ -22,25 +22,26 @@ public static class DbSeeder
         context.SaveChanges();
 
         // Create users
-        // Password for all test users: "password123" (MD5: 482c811da5d5b4bc6d497ffa98491e38)
-        // Admin password: "admin" (MD5: 21232f297a57a5a743894a0e4a801fc3)
+        // Password for all test users: "password123" (BCrypt hashed)
+        // Admin password: "admin" (BCrypt hashed)
         var users = new[]
         {
             new User
             {
                 Login = "admin",
-                Password = "21232f297a57a5a743894a0e4a801fc3",
+                Password = BCrypt.Net.BCrypt.HashPassword("admin"),
                 Email = "admin@nawel.com",
                 FirstName = "Admin",
                 LastName = "System",
                 Avatar = "avatar.png",
                 Pseudo = "Admin",
+                IsAdmin = true, // Set first user as admin
                 FamilyId = familyNironi.Id
             },
             new User
             {
                 Login = "sylvain",
-                Password = "482c811da5d5b4bc6d497ffa98491e38",
+                Password = BCrypt.Net.BCrypt.HashPassword("password123"),
                 Email = "sylvain@nawel.com",
                 FirstName = "Sylvain",
                 LastName = "Nironi",
@@ -53,7 +54,7 @@ public static class DbSeeder
             new User
             {
                 Login = "claire",
-                Password = "482c811da5d5b4bc6d497ffa98491e38",
+                Password = BCrypt.Net.BCrypt.HashPassword("password123"),
                 Email = "claire@nawel.com",
                 FirstName = "Claire",
                 LastName = "Nironi",
@@ -65,7 +66,7 @@ public static class DbSeeder
             new User
             {
                 Login = "marie",
-                Password = "482c811da5d5b4bc6d497ffa98491e38",
+                Password = BCrypt.Net.BCrypt.HashPassword("password123"),
                 Email = "marie@nawel.com",
                 FirstName = "Marie",
                 LastName = "Nironi",

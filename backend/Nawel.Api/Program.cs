@@ -1,12 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.FileProviders;
 using System.Text;
+using AspNetCoreRateLimit;
 using Nawel.Api.Data;
 using Nawel.Api.Services.Auth;
 using Nawel.Api.Services.Email;
 using Nawel.Api.Services.ProductInfo;
+using Nawel.Api.Authorization;
+using Nawel.Api.Configuration;
+using Nawel.Api.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,13 +22,49 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 
+// Configure Swagger/OpenAPI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    // Include XML comments
+    var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
+
 // Configure form options for file uploads
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 10 * 1024 * 1024; // 10 MB
+    options.MultipartBodyLengthLimit = ApplicationConstants.FileUpload.MaxFileSizeBytes;
     options.ValueLengthLimit = int.MaxValue;
     options.MultipartHeadersLengthLimit = int.MaxValue;
 });
+
+// Configure Settings (with environment variable overrides)
+var jwtSettings = new JwtSettings();
+builder.Configuration.GetSection(JwtSettings.SectionName).Bind(jwtSettings);
+jwtSettings.Secret = Environment.GetEnvironmentVariable("JWT_SECRET") ?? jwtSettings.Secret;
+jwtSettings.Issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? jwtSettings.Issuer;
+jwtSettings.Audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? jwtSettings.Audience;
+jwtSettings.Validate();
+builder.Services.AddSingleton(jwtSettings);
+
+var emailSettings = new EmailSettings();
+builder.Configuration.GetSection(EmailSettings.SectionName).Bind(emailSettings);
+emailSettings.Validate();
+builder.Services.AddSingleton(emailSettings);
+
+var fileStorageSettings = new FileStorageSettings();
+builder.Configuration.GetSection(FileStorageSettings.SectionName).Bind(fileStorageSettings);
+fileStorageSettings.Validate();
+builder.Services.AddSingleton(fileStorageSettings);
+
+// Register Exception Handler
+builder.Services.AddExceptionHandler<Nawel.Api.Middleware.GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 // Register services
 builder.Services.AddScoped<IJwtService, JwtService>();
@@ -36,10 +77,16 @@ builder.Services.AddScoped<IProductInfoExtractor, ProductInfoExtractor>();
 // Register HttpClient for ProductInfoExtractor
 builder.Services.AddHttpClient();
 
-// Configure JWT Authentication
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secret = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret not configured");
+// Configure Rate Limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
+// Configure JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -50,15 +97,26 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
         ValidateIssuer = true,
-        ValidIssuer = jwtSettings["Issuer"],
+        ValidIssuer = jwtSettings.Issuer,
         ValidateAudience = true,
-        ValidAudience = jwtSettings["Audience"],
+        ValidAudience = jwtSettings.Audience,
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
 });
+
+// Configure Authorization Policies
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.Requirements.Add(new AdminRequirement()));
+});
+
+// Register Authorization Handler
+builder.Services.AddSingleton<IAuthorizationHandler, AdminAuthorizationHandler>();
+builder.Services.AddHttpContextAccessor();
 
 // Configure Database (SQLite for dev, MySQL for prod)
 var useSqlite = builder.Configuration.GetValue<bool>("UseSqlite");
@@ -110,6 +168,21 @@ if (useSqlite && app.Environment.IsDevelopment())
 
 // Configure the HTTP request pipeline.
 
+// Exception handler must be first
+app.UseExceptionHandler();
+
+// Enable Swagger in all environments
+app.UseSwagger();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Nawel API v1");
+    options.RoutePrefix = "swagger";
+    options.DocumentTitle = "Nawel API Documentation";
+});
+
+// Rate limiting must be before authentication/authorization
+app.UseIpRateLimiting();
+
 app.UseCors("AllowFrontend");
 
 // Serve static files from wwwroot (default)
@@ -130,3 +203,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Make Program accessible to integration tests
+public partial class Program { }

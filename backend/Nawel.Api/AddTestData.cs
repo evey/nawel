@@ -1,9 +1,13 @@
+#if DEBUG
 using Microsoft.EntityFrameworkCore;
 using Nawel.Api.Data;
 using Nawel.Api.Models;
 
 namespace Nawel.Api;
 
+/// <summary>
+/// Test data generation utilities - Only available in DEBUG builds
+/// </summary>
 public class AddTestData
 {
     public static async Task AddSylvainTestGifts(NawelDbContext context)
@@ -279,3 +283,4 @@ public class AddTestData
         Console.WriteLine($"  - {parfumGift.Name} - réservé par {claire.FirstName} et {sylvain.FirstName} (cadeau groupé)");
     }
 }
+#endif

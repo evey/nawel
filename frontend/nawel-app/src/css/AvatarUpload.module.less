@@ -1,0 +1,56 @@
+// Styles pour AvatarUpload
+.card {
+  margin-bottom: 24px; // 3 * 8px
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px; // 3 * 8px
+  margin-top: 16px; // 2 * 8px
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px; // 2 * 8px
+}
+
+.avatarPreview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid;
+}
+
+.actionsSection {
+  flex: 1;
+  width: 100%;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.buttonContainer {
+  display: flex;
+  gap: 8px;
+  flex-direction: column;
+
+  @media (min-width: 600px) {
+    flex-direction: row;
+  }
+}
+
+.helperText {
+  margin-top: 8px;
+  display: block;
+}
