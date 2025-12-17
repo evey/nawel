@@ -154,16 +154,28 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Ensure database is created (only for SQLite dev mode)
-if (useSqlite && app.Environment.IsDevelopment())
+// Run migrations automatically on startup (for all environments)
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<NawelDbContext>();
-    dbContext.Database.EnsureCreated();
-    Console.WriteLine("SQLite database initialized");
+    var db = scope.ServiceProvider.GetRequiredService<NawelDbContext>();
+    try
+    {
+        app.Logger.LogInformation("Running database migrations...");
+        db.Database.Migrate();
+        app.Logger.LogInformation("Database migrations completed successfully.");
 
-    // Seed test data
-    DbSeeder.SeedTestData(dbContext);
+        // Seed test data in development mode
+        if (useSqlite && app.Environment.IsDevelopment())
+        {
+            DbSeeder.SeedTestData(db);
+            Console.WriteLine("SQLite database initialized with test data");
+        }
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "An error occurred while migrating the database.");
+        throw;
+    }
 }
 
 // Configure the HTTP request pipeline.
