@@ -11,7 +11,7 @@ using Nawel.Api.Data;
 namespace Nawel.Api.Migrations
 {
     [DbContext(typeof(NawelDbContext))]
-    [Migration("20251217151401_InitialCreate")]
+    [Migration("20251217164253_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
