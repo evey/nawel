@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nawel.Api.Data;
 
@@ -15,23 +16,29 @@ namespace Nawel.Api.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.0");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+
+            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("Nawel.Api.Models.Family", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("id");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("name");
 
                     b.HasKey("Id");
@@ -45,11 +52,13 @@ namespace Nawel.Api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("id");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<bool>("Available")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(1)")
                         .HasColumnName("available");
 
                     b.Property<string>("Comment")
@@ -61,12 +70,12 @@ namespace Nawel.Api.Migrations
                         .HasColumnName("cost");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Currency")
                         .HasMaxLength(3)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(3)")
                         .HasColumnName("currency");
 
                     b.Property<string>("Description")
@@ -75,38 +84,38 @@ namespace Nawel.Api.Migrations
 
                     b.Property<string>("Image")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(500)")
                         .HasColumnName("image");
 
                     b.Property<bool>("IsGroupGift")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(1)")
                         .HasColumnName("is_group_gift");
 
                     b.Property<string>("Link")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(500)")
                         .HasColumnName("link");
 
                     b.Property<int>("ListId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("list_id");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("name");
 
                     b.Property<int?>("TakenBy")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("taken_by");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at");
 
                     b.Property<int>("Year")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("year");
 
                     b.HasKey("Id");
@@ -124,25 +133,27 @@ namespace Nawel.Api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("id");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("name");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
@@ -157,23 +168,25 @@ namespace Nawel.Api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("id");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
 
                     b.Property<int>("GiftId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("gift_id");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(1)")
                         .HasColumnName("is_active");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
@@ -189,30 +202,32 @@ namespace Nawel.Api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("id");
 
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
 
                     b.Property<string>("ErrorMessage")
                         .HasMaxLength(500)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(500)")
                         .HasColumnName("error_message");
 
                     b.Property<bool>("Success")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(1)")
                         .HasColumnName("success");
 
                     b.Property<string>("Url")
                         .IsRequired()
                         .HasMaxLength(2048)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(2048)")
                         .HasColumnName("url");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
@@ -228,86 +243,88 @@ namespace Nawel.Api.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("id");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Avatar")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("avatar");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("created_at");
 
                     b.Property<bool>("DisplayPopup")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(1)")
                         .HasColumnName("display_popup");
 
                     b.Property<string>("Email")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("email");
 
                     b.Property<int>("FamilyId")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("int")
                         .HasColumnName("family_id");
 
                     b.Property<string>("FirstName")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("first_name");
 
                     b.Property<bool>("IsAdmin")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(1)")
                         .HasColumnName("is_admin");
 
                     b.Property<bool>("IsChildren")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(1)")
                         .HasColumnName("isChildren");
 
                     b.Property<string>("LastName")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("last_name");
 
                     b.Property<string>("Login")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("login");
 
                     b.Property<bool>("NotifyGiftTaken")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(1)")
                         .HasColumnName("notify_gift_taken");
 
                     b.Property<bool>("NotifyListEdit")
-                        .HasColumnType("INTEGER")
+                        .HasColumnType("tinyint(1)")
                         .HasColumnName("notify_list_edit");
 
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("pwd");
 
                     b.Property<string>("Pseudo")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("pseudo");
 
                     b.Property<string>("ResetToken")
                         .HasMaxLength(255)
-                        .HasColumnType("TEXT")
+                        .HasColumnType("varchar(255)")
                         .HasColumnName("reset_token");
 
                     b.Property<DateTime?>("TokenExpiry")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("token_expiry");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("TEXT")
+                        .HasColumnType("datetime(6)")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
