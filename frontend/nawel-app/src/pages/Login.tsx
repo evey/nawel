@@ -165,11 +165,6 @@ const Login = (): JSX.Element => {
             </Alert>
           )}
 
-          <Box className={styles.testAccountInfo}>
-            <Typography variant="body2" color="text.secondary" align="center">
-              Comptes de test : sylvain / password123
-            </Typography>
-          </Box>
         </Paper>
       </Box>
     </Container>
