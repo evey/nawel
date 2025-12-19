@@ -60,12 +60,12 @@ services:
     build:
       context: ./frontend/nawel-app
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5000/api
     container_name: nawel-frontend
     restart: always
     ports:
       - "3000:80"
-    environment:
-      - VITE_API_URL=http://localhost:5000/api
     depends_on:
       - backend
     networks:

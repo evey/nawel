@@ -2,6 +2,9 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Declare build arg
+ARG VITE_API_URL
+
 # Copy package files
 COPY package*.json ./
 
@@ -10,6 +13,9 @@ RUN npm ci
 
 # Copy source code
 COPY . .
+
+# Set env var for build
+ENV VITE_API_URL=$VITE_API_URL
 
 # Build the app
 RUN npm run build
