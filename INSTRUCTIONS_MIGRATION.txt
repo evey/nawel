@@ -1,0 +1,127 @@
+================================================================================
+INSTRUCTIONS MIGRATION PRODUCTION - Suite
+================================================================================
+
+PROBLEME DETECTE: Le backend a redémarré automatiquement et EF Core essaie
+d'appliquer ses migrations alors que les tables existent déjà.
+
+SOLUTION: Arrêter le backend, dire à EF Core que les migrations sont appliquées,
+puis appliquer les ajustements.
+
+--------------------------------------------------------------------------------
+0. ARRETER LE BACKEND IMMEDIATEMENT
+--------------------------------------------------------------------------------
+
+  cd /var/www/apps/infrastructure
+  docker-compose -f docker-compose.production.yml stop nawel-backend
+
+--------------------------------------------------------------------------------
+1. DIRE A EF CORE QUE LES MIGRATIONS SONT APPLIQUEES
+--------------------------------------------------------------------------------
+
+Se connecter à MySQL:
+  docker exec -it shared-mysql mysql -u root -p nawel
+
+Dans MySQL:
+  -- Créer la table de suivi des migrations EF Core
+  CREATE TABLE IF NOT EXISTS __EFMigrationsHistory (
+    MigrationId varchar(150) NOT NULL,
+    ProductVersion varchar(32) NOT NULL,
+    PRIMARY KEY (MigrationId)
+  );
+
+  -- Marquer la migration comme appliquée
+  INSERT INTO __EFMigrationsHistory (MigrationId, ProductVersion)
+  VALUES ('20251218122111_InitialCreate', '8.0.0')
+  ON DUPLICATE KEY UPDATE ProductVersion = ProductVersion;
+
+  exit
+
+IMPORTANT: Vérifier que c'est bien fait:
+  SELECT * FROM __EFMigrationsHistory;
+  -- Doit afficher: 20251218122111_InitialCreate | 8.0.0
+
+--------------------------------------------------------------------------------
+PROBLEME POSSIBLE: Structure des tables différente
+--------------------------------------------------------------------------------
+
+Le dump SQL contient l'ancienne structure. EF Core attend peut-être des colonnes
+supplémentaires (created_at, updated_at, etc.).
+
+SOLUTION: Le script d'ajustements va ajouter ces colonnes si nécessaire.
+
+Vérifier la structure d'une table:
+  DESCRIBE user;
+
+Si vous voyez des erreurs dans les logs du backend, notez-les et continuez
+avec le script d'ajustements qui devrait les corriger.
+
+--------------------------------------------------------------------------------
+2. CORRIGER LA STRUCTURE DES TABLES (ajouter colonnes manquantes)
+--------------------------------------------------------------------------------
+
+Copier le script de correction:
+  cd /var/www/apps/infrastructure
+  docker cp backend/Nawel.Api/Migrations/fix_table_structure.sql shared-mysql:/tmp/
+
+Se connecter à MySQL:
+  docker exec -it shared-mysql mysql -u root -p nawel
+
+Dans MySQL:
+  source /tmp/fix_table_structure.sql;
+
+Ce script ajoute les colonnes created_at et updated_at attendues par EF Core.
+
+--------------------------------------------------------------------------------
+3. APPLIQUER LE SCRIPT D'AJUSTEMENTS
+--------------------------------------------------------------------------------
+
+Copier le script d'ajustements:
+  docker cp backend/Nawel.Api/Migrations/import_prod_from_dump.sql shared-mysql:/tmp/
+
+Toujours dans MySQL:
+  source /tmp/import_prod_from_dump.sql;
+  exit
+
+Ce script va:
+  - Mettre à jour les chemins des avatars (uploads/avatars/)
+  - Mettre à jour les flags is_group_gift
+  - Afficher toutes les vérifications
+
+--------------------------------------------------------------------------------
+4. COPIER LES FICHIERS AVATAR
+--------------------------------------------------------------------------------
+
+Depuis l'ancienne application:
+  cp -r /chemin/vers/ancienne-app/uploads/avatars/* /var/www/apps/infrastructure/backend/Nawel.Api/uploads/avatars/
+
+Vérifier les permissions:
+  chmod 755 /var/www/apps/infrastructure/backend/Nawel.Api/uploads/avatars
+  chmod 644 /var/www/apps/infrastructure/backend/Nawel.Api/uploads/avatars/*
+
+--------------------------------------------------------------------------------
+5. REDEMARRER LE BACKEND
+--------------------------------------------------------------------------------
+
+  cd /var/www/apps/infrastructure
+  docker-compose -f docker-compose.production.yml start nawel-backend
+
+Vérifier que c'est bien démarré:
+  docker ps | grep nawel
+
+Surveiller les logs:
+  docker logs -f infrastructure_nawel-backend
+
+--------------------------------------------------------------------------------
+6. TESTER L'APPLICATION
+--------------------------------------------------------------------------------
+
+1. Ouvrir l'application dans le navigateur
+2. Essayer de se connecter
+3. Les utilisateurs MD5 devront réinitialiser leur mot de passe
+4. Vérifier les avatars
+5. Consulter les listes et cadeaux
+
+================================================================================
+FIN DES INSTRUCTIONS
+================================================================================
