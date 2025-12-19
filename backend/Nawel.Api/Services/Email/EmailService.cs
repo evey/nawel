@@ -23,7 +23,8 @@ public class EmailService : IEmailService
     {
         if (!_emailSettings.Enabled)
         {
-            _logger.LogInformation("Email sending is disabled. Would have sent to {To}: {Subject}", to, subject);
+            _logger.LogInformation("Email sending is disabled. Would have sent to {To}: {Subject}\n\nContent:\n{Body}",
+                to, subject, htmlBody);
             return;
         }
 

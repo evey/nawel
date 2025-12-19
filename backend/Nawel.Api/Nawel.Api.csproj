@@ -24,4 +24,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
   </ItemGroup>
 
+  <!-- Exclude backup migrations from compilation -->
+  <ItemGroup>
+    <Compile Remove="Migrations\_backup\**" />
+    <EmbeddedResource Remove="Migrations\_backup\**" />
+    <None Remove="Migrations\_backup\**" />
+  </ItemGroup>
+
 </Project>

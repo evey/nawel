@@ -1,0 +1,7 @@
+# Ignorer les migrations actives (elles changent selon l'environnement)
+*.cs
+*.Designer.cs
+
+# GARDER les backups (versions SQLite et MySQL)
+!_backup/**/*.cs
+!_backup/**/*.Designer.cs

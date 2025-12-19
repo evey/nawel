@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Bonnet -->
+  <path d="M30,40 Q30,20 50,20 Q70,20 70,40 L70,45 L30,45 Z" fill="#e74c3c"/>
+  <!-- Pompon -->
+  <circle cx="50" cy="18" r="6" fill="#ffffff"/>
+  <!-- Bordure bonnet -->
+  <rect x="30" y="45" width="40" height="5" fill="#ffffff"/>
+  <!-- Visage -->
+  <ellipse cx="50" cy="60" rx="18" ry="20" fill="#ffd7b5"/>
+  <!-- Yeux -->
+  <circle cx="43" cy="58" r="2" fill="#000000"/>
+  <circle cx="57" cy="58" r="2" fill="#000000"/>
+  <!-- Joues roses -->
+  <circle cx="38" cy="63" r="3" fill="#ff9999" opacity="0.6"/>
+  <circle cx="62" cy="63" r="3" fill="#ff9999" opacity="0.6"/>
+  <!-- Barbe -->
+  <path d="M35,68 Q40,75 50,77 Q60,75 65,68 Q65,85 50,88 Q35,85 35,68 Z" fill="#ffffff"/>
+  <!-- Nez -->
+  <circle cx="50" cy="64" r="2" fill="#ff9999"/>
+</svg>

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Boîte cadeau -->
+  <rect x="20" y="45" width="60" height="45" fill="#e74c3c" rx="2"/>
+  <!-- Ruban horizontal -->
+  <rect x="20" y="60" width="60" height="8" fill="#ffd700"/>
+  <!-- Ruban vertical -->
+  <rect x="46" y="45" width="8" height="45" fill="#ffd700"/>
+  <!-- Nœud -->
+  <ellipse cx="38" cy="38" rx="12" ry="8" fill="#ffd700"/>
+  <ellipse cx="62" cy="38" rx="12" ry="8" fill="#ffd700"/>
+  <circle cx="50" cy="38" r="6" fill="#ffd700"/>
+  <!-- Reflet -->
+  <rect x="25" y="50" width="5" height="8" fill="#ff6b6b" opacity="0.6"/>
+</svg>

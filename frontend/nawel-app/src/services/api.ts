@@ -41,6 +41,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Don't redirect if it's a legacy password error - let the login page handle it
+      if (error.response?.data?.code === 'LEGACY_PASSWORD') {
+        return Promise.reject(error);
+      }
+
       // Token expired or invalid, logout user
       localStorage.removeItem('token');
       localStorage.removeItem('user');

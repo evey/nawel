@@ -32,7 +32,7 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 API_DIR="$(dirname "$SCRIPT_DIR")"
 PROJECT_ROOT="$(dirname "$(dirname "$API_DIR")")"
-OLD_SQL="$PROJECT_ROOT/old/nironico_nawel.sql"
+OLD_SQL="$PROJECT_ROOT/old/nironico_nawel_update.sql"
 DB_FILE="$API_DIR/nawel.db"
 BACKUP_FILE="$API_DIR/nawel.db.backup_$(date +%Y%m%d_%H%M%S)"
 

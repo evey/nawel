@@ -26,7 +26,9 @@
       "Bash(ls:*)",
       "Bash(dotnet clean:*)",
       "Bash(dotnet restore:*)",
-      "Bash(dotnet run:*)"
+      "Bash(dotnet run:*)",
+      "Bash(./sqlite3.exe:*)",
+      "Bash(powershell -Command \"Get-Process -Name dotnet -ErrorAction SilentlyContinue | Stop-Process -Force\")"
     ],
     "deny": [],
     "ask": []

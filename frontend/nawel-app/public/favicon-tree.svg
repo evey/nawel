@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Sapin de Noël -->
+  <polygon points="50,10 30,40 35,40 20,65 28,65 15,85 85,85 72,65 80,65 65,40 70,40" fill="#2d7c2e"/>
+  <!-- Étoile -->
+  <path d="M50,5 L52,12 L59,12 L53,16 L55,23 L50,19 L45,23 L47,16 L41,12 L48,12 Z" fill="#ffd700"/>
+  <!-- Tronc -->
+  <rect x="45" y="85" width="10" height="10" fill="#8b4513"/>
+  <!-- Boules -->
+  <circle cx="40" cy="50" r="3" fill="#ff0000"/>
+  <circle cx="60" cy="55" r="3" fill="#0066ff"/>
+  <circle cx="50" cy="70" r="3" fill="#ffd700"/>
+</svg>

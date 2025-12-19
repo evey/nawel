@@ -94,6 +94,14 @@ public class NawelDbContext : DbContext
                 .HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+
+        // Force auto-increment for all Id properties to work with both SQLite and MySQL
+        modelBuilder.Entity<Family>().Property(e => e.Id).ValueGeneratedOnAdd();
+        modelBuilder.Entity<User>().Property(e => e.Id).ValueGeneratedOnAdd();
+        modelBuilder.Entity<GiftList>().Property(e => e.Id).ValueGeneratedOnAdd();
+        modelBuilder.Entity<Gift>().Property(e => e.Id).ValueGeneratedOnAdd();
+        modelBuilder.Entity<GiftParticipation>().Property(e => e.Id).ValueGeneratedOnAdd();
+        modelBuilder.Entity<OpenGraphRequest>().Property(e => e.Id).ValueGeneratedOnAdd();
     }
 
     public override int SaveChanges()

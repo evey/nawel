@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ChristmasLayout from './components/ChristmasLayout';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import MyList from './pages/MyList';
 import UserList from './pages/UserList';
@@ -18,6 +19,7 @@ const App = (): JSX.Element => {
         <ChristmasLayout>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/"
               element={
