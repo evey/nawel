@@ -54,6 +54,13 @@ builder.Services.AddSingleton(jwtSettings);
 
 var emailSettings = new EmailSettings();
 builder.Configuration.GetSection(EmailSettings.SectionName).Bind(emailSettings);
+emailSettings.SmtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? emailSettings.SmtpHost;
+emailSettings.SmtpPort = int.TryParse(Environment.GetEnvironmentVariable("SMTP_PORT"), out var port) ? port : emailSettings.SmtpPort;
+emailSettings.SmtpUser = Environment.GetEnvironmentVariable("SMTP_USERNAME") ?? emailSettings.SmtpUsername;
+emailSettings.SmtpPass = Environment.GetEnvironmentVariable("SMTP_PASSWORD") ?? emailSettings.SmtpPassword;
+emailSettings.FromEmail = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL") ?? emailSettings.FromEmail;
+emailSettings.FromName = Environment.GetEnvironmentVariable("SMTP_FROM_NAME") ?? emailSettings.FromName;
+emailSettings.UseSsl = bool.TryParse(Environment.GetEnvironmentVariable("SMTP_USE_SSL"), out var useSsl) ? useSsl : emailSettings.UseSsl;
 emailSettings.Validate();
 builder.Services.AddSingleton(emailSettings);
 
