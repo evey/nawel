@@ -349,7 +349,7 @@ public class EmailService : IEmailService
     {
         var subject = "🔐 Mise à jour de sécurité - Réinitialisation de mot de passe requise";
 
-        var resetUrl = $"http://nawel.nironi.com/reset-password?token={resetToken}";
+        var resetUrl = $"http://nawel.nironi.com/reset-password?token={Uri.EscapeDataString(resetToken)}";
 
         var htmlBody = $@"
 <!DOCTYPE html>
