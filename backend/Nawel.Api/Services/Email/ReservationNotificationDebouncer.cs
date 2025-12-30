@@ -16,7 +16,7 @@ public class ReservationNotificationDebouncer : IReservationNotificationDebounce
         _delayMinutes = configuration.GetValue<int>("Email:ReservationNotificationDelayMinutes", 5);
     }
 
-    public void ScheduleReservationNotification(int listOwnerId, string listOwnerName, string userName, string actionType, string giftName, string? comment = null)
+    public void ScheduleReservationNotification(int listOwnerId, int listId, string listOwnerName, string userName, string actionType, string giftName, string? comment = null)
     {
         var action = new ReservationAction
         {
@@ -35,6 +35,7 @@ public class ReservationNotificationDebouncer : IReservationNotificationDebounce
                 var notification = new PendingReservationNotification
                 {
                     ListOwnerId = listOwnerId,
+                    ListId = listId,
                     ListOwnerName = listOwnerName,
                     FirstActionTime = DateTime.UtcNow,
                     LastActionTime = DateTime.UtcNow,
@@ -98,6 +99,7 @@ public class ReservationNotificationDebouncer : IReservationNotificationDebounce
             // Envoyer l'email avec le résumé des actions
             await emailService.SendReservationNotificationsAsync(
                 listOwnerId,
+                notification.ListId,
                 notification.ListOwnerName,
                 notification.Actions);
         }

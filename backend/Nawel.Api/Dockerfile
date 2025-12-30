@@ -18,9 +18,6 @@ RUN dotnet publish "Nawel.Api.csproj" -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
-# Create uploads directory for avatars
-RUN mkdir -p /app/uploads/avatars
-
 COPY --from=publish /app/publish .
 
 EXPOSE 5000

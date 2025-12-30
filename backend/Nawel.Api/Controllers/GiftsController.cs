@@ -439,6 +439,7 @@ public class GiftsController : ControllerBase
             // Schedule aggregated email notification for list edit (using child's name)
             _notificationDebouncer.ScheduleListEditNotification(
                 childId,
+                childList.Id,
                 childUser.FirstName ?? childUser.Login,
                 "add",
                 gift.Name);
@@ -528,6 +529,7 @@ public class GiftsController : ControllerBase
             {
                 _notificationDebouncer.ScheduleListEditNotification(
                     currentUserId,
+                    userList.Id,
                     currentUser.FirstName ?? currentUser.Login,
                     "add",
                     gift.Name);
@@ -640,6 +642,7 @@ public class GiftsController : ControllerBase
             {
                 _notificationDebouncer.ScheduleListEditNotification(
                     giftOwnerId,
+                    gift.ListId,
                     giftOwner.FirstName ?? giftOwner.Login,
                     "update",
                     gift.Name);
@@ -732,6 +735,7 @@ public class GiftsController : ControllerBase
             }
 
             var giftName = gift.Name;
+            var giftListId = gift.ListId;
             _context.Gifts.Remove(gift);
             await _context.SaveChangesAsync();
 
@@ -741,6 +745,7 @@ public class GiftsController : ControllerBase
             {
                 _notificationDebouncer.ScheduleListEditNotification(
                     giftOwnerId,
+                    giftListId,
                     giftOwnerUser.FirstName ?? giftOwnerUser.Login,
                     "delete",
                     giftName);
@@ -923,6 +928,7 @@ public class GiftsController : ControllerBase
 
                 _reservationNotificationDebouncer.ScheduleReservationNotification(
                     gift.List!.UserId,
+                    gift.ListId,
                     ownerName,
                     unreserverName,
                     actionType,
@@ -1013,6 +1019,7 @@ public class GiftsController : ControllerBase
 
             _reservationNotificationDebouncer.ScheduleReservationNotification(
                 gift.List!.UserId,
+                gift.ListId,
                 ownerName,
                 reserverName,
                 actionType,

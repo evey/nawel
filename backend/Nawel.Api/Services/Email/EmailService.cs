@@ -52,7 +52,7 @@ public class EmailService : IEmailService
         }
     }
 
-    public async Task SendGiftReservedNotificationsAsync(int listOwnerId, string listOwnerName, string giftName, string reservedBy, string? comment = null)
+    public async Task SendGiftReservedNotificationsAsync(int listOwnerId, int listId, string listOwnerName, string giftName, string reservedBy, string? comment = null)
     {
         // Récupérer tous les utilisateurs qui ont activé la notification NotifyGiftTaken, sauf le propriétaire de la liste
         var usersToNotify = await _context.Users
@@ -60,6 +60,7 @@ public class EmailService : IEmailService
             .ToListAsync();
 
         var subject = $"🎁 Cadeau réservé sur la liste de {listOwnerName} : {giftName}";
+        var listUrl = $"{_emailSettings.AppUrl}/list/{listId}";
         var commentSection = !string.IsNullOrEmpty(comment)
             ? $@"
                 <div style=""background-color: #f0f7ff; padding: 15px; border-radius: 5px; margin-top: 15px;"">
@@ -96,6 +97,13 @@ public class EmailService : IEmailService
 
             {commentSection}
 
+            <div style=""text-align: center; margin: 30px 0;"">
+                <a href=""{listUrl}""
+                   style=""background-color: #2e7d32; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;"">
+                    Voir la liste
+                </a>
+            </div>
+
             <p style=""margin-top: 30px; font-size: 14px; color: #666;"">
                 Vous recevez cet email car vous avez activé les notifications pour les réservations de cadeaux.
             </p>
@@ -112,7 +120,7 @@ public class EmailService : IEmailService
         }
     }
 
-    public async Task SendGiftParticipationNotificationsAsync(int listOwnerId, string listOwnerName, string giftName, string participantName, string? comment = null)
+    public async Task SendGiftParticipationNotificationsAsync(int listOwnerId, int listId, string listOwnerName, string giftName, string participantName, string? comment = null)
     {
         // Récupérer tous les utilisateurs qui ont activé la notification NotifyGiftTaken, sauf le propriétaire de la liste
         var usersToNotify = await _context.Users
@@ -120,6 +128,7 @@ public class EmailService : IEmailService
             .ToListAsync();
 
         var subject = $"🎁 Participation à un cadeau groupé de {listOwnerName} : {giftName}";
+        var listUrl = $"{_emailSettings.AppUrl}/list/{listId}";
         var commentSection = !string.IsNullOrEmpty(comment)
             ? $@"
                 <div style=""background-color: #f0f7ff; padding: 15px; border-radius: 5px; margin-top: 15px;"">
@@ -157,6 +166,13 @@ public class EmailService : IEmailService
 
             {commentSection}
 
+            <div style=""text-align: center; margin: 30px 0;"">
+                <a href=""{listUrl}""
+                   style=""background-color: #2e7d32; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;"">
+                    Voir la liste
+                </a>
+            </div>
+
             <p style=""margin-top: 30px; font-size: 14px; color: #666;"">
                 Vous recevez cet email car vous avez activé les notifications pour les réservations de cadeaux.
             </p>
@@ -173,7 +189,7 @@ public class EmailService : IEmailService
         }
     }
 
-    public async Task SendListEditedNotificationsAsync(int listOwnerId, string listOwnerName, List<string>? modifications = null)
+    public async Task SendListEditedNotificationsAsync(int listOwnerId, int listId, string listOwnerName, List<string>? modifications = null)
     {
         // Récupérer tous les utilisateurs qui ont activé la notification NotifyListEdit, sauf le propriétaire de la liste
         var usersToNotify = await _context.Users
@@ -181,6 +197,7 @@ public class EmailService : IEmailService
             .ToListAsync();
 
         var subject = $"📝 {listOwnerName} a modifié sa liste de cadeaux";
+        var listUrl = $"{_emailSettings.AppUrl}/list/{listId}";
 
         // Construire la section des modifications si elles sont fournies
         var modificationsSection = "";
@@ -228,6 +245,13 @@ public class EmailService : IEmailService
                     : "Des changements ont été apportés à sa liste.")} N'hésitez pas à aller voir les nouveautés !
             </p>
 
+            <div style=""text-align: center; margin: 30px 0;"">
+                <a href=""{listUrl}""
+                   style=""background-color: #2e7d32; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;"">
+                    Voir la liste
+                </a>
+            </div>
+
             <p style=""margin-top: 30px; font-size: 14px; color: #666;"">
                 Vous recevez cet email car vous avez activé les notifications pour les modifications de listes.
             </p>
@@ -244,7 +268,7 @@ public class EmailService : IEmailService
         }
     }
 
-    public async Task SendReservationNotificationsAsync(int listOwnerId, string listOwnerName, List<ReservationAction> actions)
+    public async Task SendReservationNotificationsAsync(int listOwnerId, int listId, string listOwnerName, List<ReservationAction> actions)
     {
         // Récupérer tous les utilisateurs qui ont activé la notification NotifyGiftTaken, sauf le propriétaire de la liste
         var usersToNotify = await _context.Users
@@ -252,6 +276,7 @@ public class EmailService : IEmailService
             .ToListAsync();
 
         var subject = $"🎁 Activité sur la liste de {listOwnerName}";
+        var listUrl = $"{_emailSettings.AppUrl}/list/{listId}";
 
         // Grouper les actions par utilisateur
         var actionsByUser = actions
@@ -329,6 +354,13 @@ public class EmailService : IEmailService
                 {statsText}
             </p>
 
+            <div style=""text-align: center; margin: 30px 0;"">
+                <a href=""{listUrl}""
+                   style=""background-color: #2e7d32; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;"">
+                    Voir la liste
+                </a>
+            </div>
+
             <p style=""margin-top: 30px; font-size: 14px; color: #666;"">
                 Vous recevez cet email car vous avez activé les notifications pour les réservations de cadeaux.
             </p>
@@ -349,7 +381,7 @@ public class EmailService : IEmailService
     {
         var subject = "🔐 Mise à jour de sécurité - Réinitialisation de mot de passe requise";
 
-        var resetUrl = $"http://nawel.nironi.com/reset-password?token={Uri.EscapeDataString(resetToken)}";
+        var resetUrl = $"{_emailSettings.AppUrl}/reset-password?token={Uri.EscapeDataString(resetToken)}";
 
         var htmlBody = $@"
 <!DOCTYPE html>

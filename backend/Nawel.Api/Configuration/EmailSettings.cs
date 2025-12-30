@@ -12,6 +12,7 @@ public class EmailSettings
     public string FromEmail { get; set; } = "no-reply@nawel.com";
     public string FromName { get; set; } = "Nawel - Listes de Noël";
     public bool UseSsl { get; set; } = false;
+    public string AppUrl { get; set; } = "http://localhost:5173";
     public int NotificationDelayMinutes { get; set; } = 2;
     public int ReservationNotificationDelayMinutes { get; set; } = 2;
 

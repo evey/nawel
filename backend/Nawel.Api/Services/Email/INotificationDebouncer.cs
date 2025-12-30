@@ -2,5 +2,5 @@ namespace Nawel.Api.Services.Email;
 
 public interface INotificationDebouncer
 {
-    void ScheduleListEditNotification(int userId, string userName, string modificationType, string? giftName = null);
+    void ScheduleListEditNotification(int userId, int listId, string userName, string modificationType, string? giftName = null);
 }

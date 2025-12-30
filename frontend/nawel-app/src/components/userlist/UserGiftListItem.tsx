@@ -54,6 +54,21 @@ const UserGiftListItem = memo(({
       divider={index < totalGifts - 1}
       className={styles.listItem}
     >
+      {gift.imageUrl && (
+        <Box
+          component="img"
+          src={gift.imageUrl}
+          alt={gift.name}
+          sx={{
+            width: 80,
+            height: 80,
+            objectFit: 'cover',
+            borderRadius: 1,
+            marginRight: 2,
+            flexShrink: 0
+          }}
+        />
+      )}
       <ListItemText
         primary={
           <Box className={styles.titleContainer}>

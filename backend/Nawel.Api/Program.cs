@@ -61,6 +61,7 @@ emailSettings.SmtpPassword = Environment.GetEnvironmentVariable("SMTP_PASSWORD")
 emailSettings.FromEmail = Environment.GetEnvironmentVariable("SMTP_FROM_EMAIL") ?? emailSettings.FromEmail;
 emailSettings.FromName = Environment.GetEnvironmentVariable("SMTP_FROM_NAME") ?? emailSettings.FromName;
 emailSettings.UseSsl = bool.TryParse(Environment.GetEnvironmentVariable("SMTP_USE_SSL"), out var useSsl) ? useSsl : emailSettings.UseSsl;
+emailSettings.AppUrl = Environment.GetEnvironmentVariable("APP_URL") ?? emailSettings.AppUrl;
 emailSettings.Validate();
 builder.Services.AddSingleton(emailSettings);
 

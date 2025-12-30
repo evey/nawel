@@ -16,7 +16,7 @@ public class NotificationDebouncer : INotificationDebouncer, IDisposable
         _delayMinutes = configuration.GetValue<int>("Email:NotificationDelayMinutes", 15);
     }
 
-    public void ScheduleListEditNotification(int userId, string userName, string modificationType, string? giftName = null)
+    public void ScheduleListEditNotification(int userId, int listId, string userName, string modificationType, string? giftName = null)
     {
         var modificationText = modificationType switch
         {
@@ -34,6 +34,7 @@ public class NotificationDebouncer : INotificationDebouncer, IDisposable
                 var notification = new PendingNotification
                 {
                     UserId = userId,
+                    ListId = listId,
                     UserName = userName,
                     FirstModificationTime = DateTime.UtcNow,
                     LastModificationTime = DateTime.UtcNow,
@@ -97,6 +98,7 @@ public class NotificationDebouncer : INotificationDebouncer, IDisposable
             // Envoyer l'email avec le résumé des modifications
             await emailService.SendListEditedNotificationsAsync(
                 userId,
+                notification.ListId,
                 notification.UserName,
                 notification.Modifications);
         }
