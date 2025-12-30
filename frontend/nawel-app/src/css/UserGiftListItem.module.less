@@ -13,6 +13,25 @@
   }
 }
 
+.giftImage {
+  width: 100%;
+  min-height: 150px;
+  max-height: 250px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 0;
+  flex-shrink: 0;
+  align-self: center;
+
+  @media (min-width: 600px) {
+    width: 120px;
+    min-height: 100px;
+    max-height: 200px;
+    margin-right: 16px;
+    align-self: stretch;
+  }
+}
+
 .titleContainer {
   display: flex;
   align-items: center;

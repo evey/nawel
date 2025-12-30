@@ -59,13 +59,9 @@ const UserGiftListItem = memo(({
           component="img"
           src={gift.imageUrl}
           alt={gift.name}
-          sx={{
-            width: 80,
-            height: 80,
-            objectFit: 'cover',
-            borderRadius: 1,
-            marginRight: 2,
-            flexShrink: 0
+          className={styles.giftImage}
+          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+            e.currentTarget.style.display = 'none';
           }}
         />
       )}
