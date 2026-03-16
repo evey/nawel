@@ -38,7 +38,7 @@ public class ProductInfoExtractor : IProductInfoExtractor
 
             // Créer le client HTTP avec des headers réalistes
             var httpClient = _httpClientFactory.CreateClient();
-            httpClient.Timeout = TimeSpan.FromSeconds(15);
+            httpClient.Timeout = TimeSpan.FromSeconds(8);
 
             var request = new HttpRequestMessage(HttpMethod.Get, url);
 
@@ -487,6 +487,7 @@ public class ProductInfoExtractor : IProductInfoExtractor
             var apiUrl = $"https://opengraph.io/api/1.1/site/{Uri.EscapeDataString(url)}?app_id={apiKey}";
 
             var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(10);
             var response = await httpClient.GetAsync(apiUrl, cancellationToken);
             response.EnsureSuccessStatusCode();
 
