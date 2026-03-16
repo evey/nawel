@@ -83,8 +83,8 @@ namespace Nawel.Api.Migrations
                         .HasColumnName("description");
 
                     b.Property<string>("Image")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
+                        .HasMaxLength(2048)
+                        .HasColumnType("varchar(2048)")
                         .HasColumnName("image");
 
                     b.Property<bool>("IsGroupGift")
@@ -92,8 +92,8 @@ namespace Nawel.Api.Migrations
                         .HasColumnName("is_group_gift");
 
                     b.Property<string>("Link")
-                        .HasMaxLength(500)
-                        .HasColumnType("varchar(500)")
+                        .HasMaxLength(2048)
+                        .HasColumnType("varchar(2048)")
                         .HasColumnName("link");
 
                     b.Property<int>("ListId")

@@ -235,7 +235,7 @@ const MyList = (): JSX.Element => {
 
   const handleImport = async (year: number): Promise<void> => {
     try {
-      const response = await giftsAPI.importGifts(year, selectedYear);
+      const response = await giftsAPI.importGifts(year);
       await fetchGifts();
       setOpenImportDialog(false);
       setSuccessMessage(`Cadeaux importés avec succès`);

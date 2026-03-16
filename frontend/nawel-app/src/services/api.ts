@@ -99,8 +99,8 @@ export const giftsAPI = {
   getUserGifts: (userId: number, year: number): Promise<AxiosResponse<Gift[]>> =>
     api.get(`/gifts/${userId}`, { params: { year } }),
   getAvailableYears: (): Promise<AxiosResponse<number[]>> => api.get('/gifts/years'),
-  importGifts: (fromYear: number, toYear: number): Promise<AxiosResponse<{ message: string }>> =>
-    api.post(`/gifts/import/${fromYear}/${toYear}`),
+  importGifts: (fromYear: number): Promise<AxiosResponse<{ message: string }>> =>
+    api.post(`/gifts/import-from-year/${fromYear}`),
   createGift: (data: CreateGiftData): Promise<AxiosResponse<Gift>> => api.post('/gifts', data),
   createGiftForChild: (childId: number, data: CreateGiftData): Promise<AxiosResponse<Gift>> =>
     api.post(`/gifts/manage-child/${childId}`, data),

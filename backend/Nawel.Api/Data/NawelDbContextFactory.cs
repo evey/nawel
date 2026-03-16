@@ -21,3 +21,4 @@ public class NawelDbContextFactory : IDesignTimeDbContextFactory<NawelDbContext>
         return new NawelDbContext(optionsBuilder.Options);
     }
 }
+

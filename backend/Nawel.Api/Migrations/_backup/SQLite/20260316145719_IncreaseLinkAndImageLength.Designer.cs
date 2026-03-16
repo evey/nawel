@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nawel.Api.Data;
 
@@ -10,9 +11,11 @@ using Nawel.Api.Data;
 namespace Nawel.Api.Migrations
 {
     [DbContext(typeof(NawelDbContext))]
-    partial class NawelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260316145719_IncreaseLinkAndImageLength")]
+    partial class IncreaseLinkAndImageLength
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.0");

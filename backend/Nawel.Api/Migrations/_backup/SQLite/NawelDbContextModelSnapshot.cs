@@ -74,7 +74,7 @@ namespace Nawel.Api.Migrations
                         .HasColumnName("description");
 
                     b.Property<string>("Image")
-                        .HasMaxLength(500)
+                        .HasMaxLength(2048)
                         .HasColumnType("TEXT")
                         .HasColumnName("image");
 
@@ -83,7 +83,7 @@ namespace Nawel.Api.Migrations
                         .HasColumnName("is_group_gift");
 
                     b.Property<string>("Link")
-                        .HasMaxLength(500)
+                        .HasMaxLength(2048)
                         .HasColumnType("TEXT")
                         .HasColumnName("link");
 

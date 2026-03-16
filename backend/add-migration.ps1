@@ -1,5 +1,5 @@
-# Script pour generer automatiquement les migrations SQLite ET MySQL
-# Usage: .\add-migration.ps1 -Name "MyMigrationName"
+# Script pour generer les migrations SQLite ET MySQL
+# Usage: .\add-migration.ps1 -Name "MaMigration"
 
 param(
     [Parameter(Mandatory=$true)]
@@ -8,174 +8,140 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "Generation automatique des migrations SQLite et MySQL" -ForegroundColor Cyan
-Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Generation de la migration: $Name" -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
 
-$apiPath = "Nawel.Api"
-$migrationsPath = "$apiPath\Migrations"
-$backupPath = "$migrationsPath\_backup"
-$sqliteBackup = "$backupPath\SQLite"
-$mysqlBackup = "$backupPath\MySQL"
-$factoryPath = "$apiPath\Data\NawelDbContextFactory.cs"
-
-# Creer les dossiers de backup si necessaire
-if (!(Test-Path $backupPath)) {
-    New-Item -ItemType Directory -Path $backupPath | Out-Null
-}
-if (!(Test-Path $sqliteBackup)) {
-    New-Item -ItemType Directory -Path $sqliteBackup | Out-Null
-}
-if (!(Test-Path $mysqlBackup)) {
-    New-Item -ItemType Directory -Path $mysqlBackup | Out-Null
-}
-
-# Sauvegarder le factory actuel
+# Sauvegarder le NawelDbContextFactory actuel
+$factoryPath = "Nawel.Api\Data\NawelDbContextFactory.cs"
 $factoryBackup = Get-Content $factoryPath -Raw
 
-Write-Host "Factory actuel sauvegarde" -ForegroundColor Green
-Write-Host ""
-
-# Template pour SQLite
+# Template SQLite
 $sqliteFactory = @'
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace Nawel.Api.Data;
 
-/// <summary>
-/// Factory for creating NawelDbContext at design-time (for migrations).
-/// This ensures migrations are always generated for SQLite.
-/// </summary>
 public class NawelDbContextFactory : IDesignTimeDbContextFactory<NawelDbContext>
 {
     public NawelDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<NawelDbContext>();
-
-        // Use SQLite for development
         var connectionString = "Data Source=nawel.db";
         optionsBuilder.UseSqlite(connectionString);
-
         return new NawelDbContext(optionsBuilder.Options);
     }
 }
 '@
 
-# Template pour MySQL
+# Template MySQL
 $mysqlFactory = @'
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
 namespace Nawel.Api.Data;
 
-/// <summary>
-/// Factory for creating NawelDbContext at design-time (for migrations).
-/// This ensures migrations are always generated for MySQL.
-/// </summary>
 public class NawelDbContextFactory : IDesignTimeDbContextFactory<NawelDbContext>
 {
     public NawelDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<NawelDbContext>();
-
-        // Use a dummy MySQL connection string for migration generation
-        // The actual connection string will be used at runtime
         var connectionString = "Server=localhost;Port=3306;Database=nawel;User=root;Password=dummy;";
         var serverVersion = new MySqlServerVersion(new Version(8, 0, 0));
-
         optionsBuilder.UseMySql(connectionString, serverVersion);
-
         return new NawelDbContext(optionsBuilder.Options);
     }
 }
 '@
 
 try {
-    # ===========================
+    # Creer les dossiers de backup
+    $backupDir = "Nawel.Api\Migrations\_backup"
+    $sqliteBackup = "$backupDir\SQLite"
+    $mysqlBackup = "$backupDir\MySQL"
+    New-Item -ItemType Directory -Force -Path $sqliteBackup | Out-Null
+    New-Item -ItemType Directory -Force -Path $mysqlBackup | Out-Null
+
+    $snapshotPath = "Nawel.Api\Migrations\NawelDbContextModelSnapshot.cs"
+    $sqliteSnapshotBackup = "$sqliteBackup\NawelDbContextModelSnapshot.cs"
+    $mysqlSnapshotBackup = "$mysqlBackup\NawelDbContextModelSnapshot.cs"
+
     # 1. Generer migration SQLite
-    # ===========================
-    Write-Host "Etape 1/4 : Generation de la migration SQLite..." -ForegroundColor Yellow
-    $sqliteFactory | Set-Content $factoryPath -NoNewline
+    Write-Host "`n[1/6] Configuration pour SQLite..." -ForegroundColor Yellow
+    Set-Content -Path $factoryPath -Value $sqliteFactory
 
-    Push-Location $apiPath
-    dotnet ef migrations add $Name --output-dir Migrations
+    # Restaurer le snapshot SQLite s'il existe
+    if (Test-Path $sqliteSnapshotBackup) {
+        Write-Host "    Restauration du snapshot SQLite..." -ForegroundColor Gray
+        Copy-Item $sqliteSnapshotBackup $snapshotPath -Force
+    }
+
+    Write-Host "[2/6] Generation migration SQLite..." -ForegroundColor Yellow
+    Push-Location "Nawel.Api"
+    dotnet ef migrations add $Name --context NawelDbContext
+    if ($LASTEXITCODE -ne 0) {
+        Pop-Location
+        throw "Erreur generation SQLite"
+    }
     Pop-Location
 
-    Write-Host "Migration SQLite generee" -ForegroundColor Green
+    # Sauvegarder les fichiers SQLite
+    Get-ChildItem "Nawel.Api\Migrations\*$Name*.cs" | Move-Item -Destination $sqliteBackup -Force
+    Copy-Item $snapshotPath $sqliteSnapshotBackup -Force
 
-    # Sauvegarder vers _backup/SQLite
-    Write-Host "Sauvegarde vers _backup/SQLite/..." -ForegroundColor Yellow
-    Get-ChildItem "$migrationsPath\*.cs" | Copy-Item -Destination $sqliteBackup -Force
-    Write-Host "Migration SQLite sauvegardee" -ForegroundColor Green
-    Write-Host ""
-
-    # Supprimer les migrations actives pour la prochaine generation
-    Remove-Item "$migrationsPath\*.cs" -Force
-
-    # ===========================
     # 2. Generer migration MySQL
-    # ===========================
-    Write-Host "Etape 2/4 : Generation de la migration MySQL..." -ForegroundColor Yellow
-    $mysqlFactory | Set-Content $factoryPath -NoNewline
+    Write-Host "`n[3/6] Configuration pour MySQL..." -ForegroundColor Yellow
+    Set-Content -Path $factoryPath -Value $mysqlFactory
 
-    Push-Location $apiPath
-    dotnet ef migrations add $Name --output-dir Migrations
+    # Restaurer le snapshot MySQL s'il existe
+    if (Test-Path $mysqlSnapshotBackup) {
+        Write-Host "    Restauration du snapshot MySQL..." -ForegroundColor Gray
+        Copy-Item $mysqlSnapshotBackup $snapshotPath -Force
+    } else {
+        Write-Host "    ATTENTION: Pas de snapshot MySQL trouve, utilisation du snapshot SQLite" -ForegroundColor Yellow
+        Write-Host "    Cette migration MySQL contiendra probablement des AlterColumn..." -ForegroundColor Yellow
+    }
+
+    Write-Host "[4/6] Generation migration MySQL..." -ForegroundColor Yellow
+    Push-Location "Nawel.Api"
+    dotnet ef migrations add $Name --context NawelDbContext
+    if ($LASTEXITCODE -ne 0) {
+        Pop-Location
+        throw "Erreur generation MySQL"
+    }
     Pop-Location
 
-    Write-Host "Migration MySQL generee" -ForegroundColor Green
+    # Sauvegarder les fichiers MySQL
+    Get-ChildItem "Nawel.Api\Migrations\*$Name*.cs" | Move-Item -Destination $mysqlBackup -Force
+    Copy-Item $snapshotPath $mysqlSnapshotBackup -Force
 
-    # Sauvegarder vers _backup/MySQL
-    Write-Host "Sauvegarde vers _backup/MySQL/..." -ForegroundColor Yellow
-    Get-ChildItem "$migrationsPath\*.cs" | Copy-Item -Destination $mysqlBackup -Force
-    Write-Host "Migration MySQL sauvegardee" -ForegroundColor Green
-    Write-Host ""
+    # 3. Basculer vers SQLite par defaut (dev)
+    Write-Host "`n[5/6] Activation migrations SQLite (dev)..." -ForegroundColor Yellow
+    Get-ChildItem "Nawel.Api\Migrations\*$Name*.cs" -ErrorAction SilentlyContinue | Remove-Item -Force
+    Copy-Item "$sqliteBackup\*$Name*.cs" "Nawel.Api\Migrations\" -Force
 
-    # ===========================
-    # 3. Restaurer le factory original
-    # ===========================
-    Write-Host "Etape 3/4 : Restauration du factory..." -ForegroundColor Yellow
-    $factoryBackup | Set-Content $factoryPath -NoNewline
-    Write-Host "Factory restaure" -ForegroundColor Green
-    Write-Host ""
+    Write-Host "[6/6] Restauration du snapshot SQLite..." -ForegroundColor Yellow
+    Copy-Item $sqliteSnapshotBackup $snapshotPath -Force
 
-    # ===========================
-    # 4. Activer SQLite par defaut
-    # ===========================
-    Write-Host "Etape 4/4 : Activation des migrations SQLite (dev)..." -ForegroundColor Yellow
-    Remove-Item "$migrationsPath\*.cs" -Force -ErrorAction SilentlyContinue
-    Get-ChildItem "$sqliteBackup\*.cs" | Copy-Item -Destination $migrationsPath -Force
-    Write-Host "Migrations SQLite activees" -ForegroundColor Green
-    Write-Host ""
-
-    Write-Host "==================================================" -ForegroundColor Green
-    Write-Host "Succes ! Les deux migrations ont ete generees" -ForegroundColor Green
-    Write-Host "==================================================" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "Migrations generees :" -ForegroundColor Cyan
-    Write-Host "   - SQLite : Nawel.Api\Migrations\_backup\SQLite\" -ForegroundColor White
-    Write-Host "   - MySQL  : Nawel.Api\Migrations\_backup\MySQL\" -ForegroundColor White
-    Write-Host "   - Active : SQLite (pour le developpement)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "Important :" -ForegroundColor Yellow
-    Write-Host "   1. Verifiez les deux migrations generees" -ForegroundColor White
-    Write-Host "   2. Adaptez manuellement si necessaire (NOW(), decimal, etc.)" -ForegroundColor White
-    Write-Host "   3. Testez en dev avec SQLite" -ForegroundColor White
-    Write-Host "   4. Commitez TOUT (y compris _backup/)" -ForegroundColor White
-    Write-Host ""
-    Write-Host "Le deploiement basculera automatiquement vers MySQL" -ForegroundColor Cyan
-    Write-Host ""
+    Write-Host "`n========================================" -ForegroundColor Green
+    Write-Host "Migrations generees avec succes!" -ForegroundColor Green
+    Write-Host "  - SQLite: Nawel.Api\Migrations\_backup\SQLite\" -ForegroundColor Green
+    Write-Host "  - MySQL:  Nawel.Api\Migrations\_backup\MySQL\" -ForegroundColor Green
+    Write-Host "  - Active: SQLite (dev)" -ForegroundColor Green
+    Write-Host "========================================" -ForegroundColor Green
 
 } catch {
-    Write-Host ""
-    Write-Host "Erreur lors de la generation : $_" -ForegroundColor Red
-    Write-Host ""
-
-    # Restaurer le factory en cas d'erreur
-    Write-Host "Restauration du factory original..." -ForegroundColor Yellow
-    $factoryBackup | Set-Content $factoryPath -NoNewline
-    Write-Host "Factory restaure" -ForegroundColor Green
-
+    Write-Host "`nErreur: $_" -ForegroundColor Red
     exit 1
+} finally {
+    # Restaurer le factory original
+    Write-Host "`nRestauration du NawelDbContextFactory..." -ForegroundColor Gray
+    Set-Content -Path $factoryPath -Value $factoryBackup
 }
+
+Write-Host "`nProchaines etapes:" -ForegroundColor Cyan
+Write-Host "  1. Verifier les migrations generees" -ForegroundColor White
+Write-Host "  2. Modifier manuellement si besoin (NOW, types, etc.)" -ForegroundColor White
+Write-Host "  3. Tester en dev avec SQLite" -ForegroundColor White
+Write-Host "  4. Deployer en prod avec MySQL" -ForegroundColor White

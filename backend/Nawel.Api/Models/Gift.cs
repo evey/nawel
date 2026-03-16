@@ -22,11 +22,11 @@ public class Gift
     [Column("description", TypeName = "text")]
     public string? Description { get; set; }
 
-    [MaxLength(500)]
+    [MaxLength(2048)]
     [Column("image")]
     public string? Image { get; set; }
 
-    [MaxLength(500)]
+    [MaxLength(2048)]
     [Column("link")]
     public string? Link { get; set; }
 
