@@ -457,4 +457,151 @@ public class EmailService : IEmailService
         await SendEmailAsync(toEmail, subject, htmlBody);
         _logger.LogInformation("Migration reset email sent to {Email} for user {UserName}", toEmail, userName);
     }
+
+    public async Task SendTestEmailAsync(string toEmail, string type)
+    {
+        switch (type)
+        {
+            case "list_edited":
+                await SendTestListEditedEmailAsync(toEmail);
+                break;
+            case "gift_reserved":
+                await SendTestGiftReservedEmailAsync(toEmail);
+                break;
+            case "migration_reset":
+                await SendMigrationResetEmailAsync(toEmail, "Utilisateur Test", "exemple-token-test-1234");
+                break;
+            default:
+                throw new ArgumentException($"Type d'email inconnu : {type}");
+        }
+    }
+
+    private async Task SendTestListEditedEmailAsync(string toEmail)
+    {
+        var subject = "[TEST] 📝 Sophie a modifié sa liste de cadeaux";
+        var listUrl = $"{_emailSettings.AppUrl}/list/1";
+        var modifications = new List<string>
+        {
+            "Ajout : Livre \"Le Petit Prince\"",
+            "Modification : Console de jeux (prix mis à jour)",
+            "Suppression : Pull rouge"
+        };
+        var modificationsList = string.Join("", modifications.Select(m =>
+            $"<li style=\"margin: 5px 0;\">{m}</li>"));
+        var modificationsSection = $@"
+            <div style=""background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;"">
+                <h3 style=""margin: 0 0 10px 0; color: #1b5e20; font-size: 16px;"">📋 Modifications :</h3>
+                <ul style=""margin: 0; padding-left: 20px;"">
+                    {modificationsList}
+                </ul>
+            </div>";
+
+        var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+</head>
+<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #333;"">
+    <div style=""max-width: 600px; margin: 0 auto; padding: 20px;"">
+        <div style=""background-color: #fff3cd; border: 2px dashed #ffc107; padding: 10px; text-align: center; margin-bottom: 10px; border-radius: 5px;"">
+            <strong style=""color: #856404;"">Email de test — ne pas tenir compte</strong>
+        </div>
+        <div style=""background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;"">
+            <h1 style=""margin: 0; font-size: 28px;"">🎄 Nawel - Listes de Noël 🎄</h1>
+        </div>
+        <div style=""background-color: #ffffff; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 10px 10px;"">
+            <h2 style=""color: #1b5e20; margin-top: 0;"">Bonjour Jean,</h2>
+            <p style=""font-size: 16px;"">
+                <strong>Sophie</strong> vient de modifier sa liste de cadeaux de Noël.
+            </p>
+            {modificationsSection}
+            <p style=""font-size: 14px; color: #666;"">
+                Ces changements ont été apportés récemment. N'hésitez pas à aller voir les nouveautés !
+            </p>
+            <div style=""text-align: center; margin: 30px 0;"">
+                <a href=""{listUrl}""
+                   style=""background-color: #2e7d32; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;"">
+                    Voir la liste
+                </a>
+            </div>
+            <p style=""margin-top: 30px; font-size: 14px; color: #666;"">
+                Vous recevez cet email car vous avez activé les notifications pour les modifications de listes.
+            </p>
+        </div>
+        <div style=""text-align: center; padding: 20px; color: #666; font-size: 12px;"">
+            <p>Nawel - Votre liste de cadeaux de Noël 🎅</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        await SendEmailAsync(toEmail, subject, htmlBody);
+        _logger.LogInformation("Test email (list_edited) sent to {Email}", toEmail);
+    }
+
+    private async Task SendTestGiftReservedEmailAsync(string toEmail)
+    {
+        var subject = "[TEST] 🎁 Activité sur la liste de Sophie";
+        var listUrl = $"{_emailSettings.AppUrl}/list/1";
+        var actionsSection = @"
+            <div style=""margin-bottom: 15px;"">
+                <strong style=""color: #1b5e20;"">Marie :</strong>
+                <ul style=""margin: 5px 0; padding-left: 20px;"">
+                    <li style=""margin: 5px 0;"">Réservé : Console de jeux</li>
+                </ul>
+            </div>
+            <div style=""margin-bottom: 15px;"">
+                <strong style=""color: #1b5e20;"">Pierre :</strong>
+                <ul style=""margin: 5px 0; padding-left: 20px;"">
+                    <li style=""margin: 5px 0;"">Participé au cadeau groupé : Vélo électrique</li>
+                    <li style=""margin: 5px 0;"">Annulé : Pull rouge</li>
+                </ul>
+            </div>";
+
+        var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+</head>
+<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #333;"">
+    <div style=""max-width: 600px; margin: 0 auto; padding: 20px;"">
+        <div style=""background-color: #fff3cd; border: 2px dashed #ffc107; padding: 10px; text-align: center; margin-bottom: 10px; border-radius: 5px;"">
+            <strong style=""color: #856404;"">Email de test — ne pas tenir compte</strong>
+        </div>
+        <div style=""background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;"">
+            <h1 style=""margin: 0; font-size: 28px;"">🎄 Nawel - Listes de Noël 🎄</h1>
+        </div>
+        <div style=""background-color: #ffffff; padding: 30px; border: 1px solid #ddd; border-radius: 0 0 10px 10px;"">
+            <h2 style=""color: #1b5e20; margin-top: 0;"">Bonjour Jean,</h2>
+            <p style=""font-size: 16px;"">
+                Des actions ont été effectuées sur la liste de <strong>Sophie</strong> :
+            </p>
+            <div style=""background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;"">
+                {actionsSection}
+            </div>
+            <p style=""font-size: 13px; color: #999; text-align: center;"">
+                (2 réservations, 1 annulation dans les dernières minutes)
+            </p>
+            <div style=""text-align: center; margin: 30px 0;"">
+                <a href=""{listUrl}""
+                   style=""background-color: #2e7d32; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold; display: inline-block;"">
+                    Voir la liste
+                </a>
+            </div>
+            <p style=""margin-top: 30px; font-size: 14px; color: #666;"">
+                Vous recevez cet email car vous avez activé les notifications pour les réservations de cadeaux.
+            </p>
+        </div>
+        <div style=""text-align: center; padding: 20px; color: #666; font-size: 12px;"">
+            <p>Nawel - Votre liste de cadeaux de Noël 🎅</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+        await SendEmailAsync(toEmail, subject, htmlBody);
+        _logger.LogInformation("Test email (gift_reserved) sent to {Email}", toEmail);
+    }
 }

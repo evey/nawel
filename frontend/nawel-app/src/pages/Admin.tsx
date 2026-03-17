@@ -13,12 +13,14 @@ import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
   FamilyRestroom as FamilyIcon,
+  Email as EmailIcon,
 } from '@mui/icons-material';
 import NavigationBar from '../components/NavigationBar';
 import { useAuth } from '../contexts/AuthContext';
 import AdminDashboard from '../components/admin/AdminDashboard';
 import AdminUsers from '../components/admin/AdminUsers';
 import AdminFamilies from '../components/admin/AdminFamilies';
+import AdminEmail from '../components/admin/AdminEmail';
 import styles from '../css/Admin.module.less';
 
 const Admin = (): JSX.Element | null => {
@@ -69,12 +71,14 @@ const Admin = (): JSX.Element | null => {
             <Tab icon={<DashboardIcon />} label="Tableau de bord" iconPosition="start" />
             <Tab icon={<PeopleIcon />} label="Utilisateurs" iconPosition="start" />
             <Tab icon={<FamilyIcon />} label="Familles" iconPosition="start" />
+            <Tab icon={<EmailIcon />} label="Email" iconPosition="start" />
           </Tabs>
 
           <Box className={styles.tabContent}>
             {currentTab === 0 && <AdminDashboard setError={setError} />}
             {currentTab === 1 && <AdminUsers setError={setError} />}
             {currentTab === 2 && <AdminFamilies setError={setError} />}
+            {currentTab === 3 && <AdminEmail setError={setError} />}
           </Box>
         </Paper>
       </Container>

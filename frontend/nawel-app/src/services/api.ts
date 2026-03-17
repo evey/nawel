@@ -153,6 +153,11 @@ export const adminAPI = {
     api.put(`/admin/families/${id}`, data),
   deleteFamily: (id: number): Promise<AxiosResponse<{ message: string }>> =>
     api.delete(`/admin/families/${id}`),
+  // Email
+  getEmailStatus: (): Promise<AxiosResponse<{ enabled: boolean; from: string; appUrl: string }>> =>
+    api.get('/admin/email/status'),
+  sendTestEmail: (email: string, type: string): Promise<AxiosResponse<{ message: string }>> =>
+    api.post('/admin/email/test', { email, type }),
 };
 
 export default api;

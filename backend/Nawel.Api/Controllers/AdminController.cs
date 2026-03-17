@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Nawel.Api.Configuration;
 using Nawel.Api.Data;
 using Nawel.Api.DTOs;
 using Nawel.Api.Models;
+using Nawel.Api.Services.Email;
 using System.Security.Claims;
 
 namespace Nawel.Api.Controllers;
@@ -20,12 +22,62 @@ public class AdminController : ControllerBase
     private readonly NawelDbContext _context;
     private readonly ILogger<AdminController> _logger;
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
+    private readonly EmailSettings _emailSettings;
 
-    public AdminController(NawelDbContext context, ILogger<AdminController> logger, IConfiguration configuration)
+    public AdminController(NawelDbContext context, ILogger<AdminController> logger, IConfiguration configuration, IEmailService emailService, EmailSettings emailSettings)
     {
         _context = context;
         _logger = logger;
         _configuration = configuration;
+        _emailService = emailService;
+        _emailSettings = emailSettings;
+    }
+
+    /// <summary>
+    /// Retourne le statut de la configuration email.
+    /// </summary>
+    [HttpGet("email/status")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public ActionResult GetEmailStatus()
+    {
+        return Ok(new
+        {
+            enabled = _emailSettings.Enabled,
+            from = _emailSettings.FromEmail,
+            appUrl = _emailSettings.AppUrl
+        });
+    }
+
+    /// <summary>
+    /// Envoie un email de test à l'adresse spécifiée.
+    /// </summary>
+    /// <param name="dto">L'adresse email de destination et le type d'email à tester.</param>
+    [HttpPost("email/test")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> SendTestEmail([FromBody] SendTestEmailDto dto)
+    {
+        try
+        {
+            await _emailService.SendTestEmailAsync(dto.Email, dto.Type);
+            var message = _emailSettings.Enabled
+                ? $"Email de test ({dto.Type}) envoyé à {dto.Email}"
+                : $"Email désactivé — le contenu aurait été envoyé à {dto.Email} (voir les logs)";
+            return Ok(new { message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending test email to {Email}", dto.Email);
+            return StatusCode(500, new { message = "Erreur lors de l'envoi de l'email de test" });
+        }
     }
 
     /// <summary>
