@@ -21,8 +21,9 @@ public class AuthService : IAuthService
 
     public async Task<User?> AuthenticateAsync(string login, string password)
     {
+        // Ne pas utiliser Include ici : un Include sur une FK non-nullable ferait un INNER JOIN
+        // et rendrait invisibles les utilisateurs dont le family_id ne correspond à aucune famille.
         var user = await _context.Users
-            .Include(u => u.Family)
             .FirstOrDefaultAsync(u => u.Login == login);
 
         if (user == null)
@@ -40,12 +41,13 @@ public class AuthService : IAuthService
         }
 
         // Verify BCrypt password
-        if (BCrypt.Net.BCrypt.Verify(password, user.Password))
-        {
-            return user;
-        }
+        if (!BCrypt.Net.BCrypt.Verify(password, user.Password))
+            return null;
 
-        return null;
+        // Charger la famille séparément après vérification (pour le ToDto), sans bloquer l'auth
+        await _context.Entry(user).Reference(u => u.Family).LoadAsync();
+
+        return user;
     }
 
     public async Task<User?> GetUserByIdAsync(int userId)
